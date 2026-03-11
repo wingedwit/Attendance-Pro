@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Pro</title>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231d4ed8'/%3E%3Ctext x='50%25' y='53%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial,sans-serif' font-size='38' font-weight='700' fill='white'%3EA%3C/text%3E%3C/svg%3E">
 
     <link id="flatpickr-theme" rel="stylesheet">
@@ -569,6 +573,13 @@
         }
     </style>
     <script>
+        function formatDateDDMMYYYY(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
         function updateDesktopLock() {
             const root = document.documentElement;
             const isWideEnough = window.innerWidth >= 1025;
@@ -801,11 +812,33 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         const STORAGE_KEY = 'attendanceProData';
         let debounceTimer = null;
         const DEBOUNCE_DELAY = 300;
+        const safeStorage = {
+            get(key) {
+                try { return localStorage.getItem(key); }
+                catch (e) { return null; }
+            },
+            set(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            remove(key) {
+                try {
+                    localStorage.removeItem(key);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+        };
 
         function switchSection(targetId) {
             document.querySelectorAll('.section-content').forEach(el => {
@@ -876,7 +909,7 @@
             let saveTimeout = null;
 
             const getInitialState = () => ({
-                date: flatpickr.formatDate(new Date(), "d-m-Y"),
+                date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
                 startTime: '', endTime: '',
                 classType: "Theory", theoryType: "", batch: "",
                 minRoll: '', maxRoll: '',
@@ -926,7 +959,7 @@
             };
 
             const loadFromStorage = () => {
-                const saved = localStorage.getItem(STORAGE_KEY);
+                const saved = safeStorage.get(STORAGE_KEY);
                 if (!saved) return getInitialState();
                 try {
                     const parsed = JSON.parse(saved);
@@ -941,13 +974,30 @@
             };
 
             const saveToStorage = () => {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                const didPersist = safeStorage.set(STORAGE_KEY, JSON.stringify(state));
+                if (!didPersist) return;
                 elements.savedIndicator.classList.add('show');
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => elements.savedIndicator.classList.remove('show'), 2000);
             };
 
-            const datePicker = flatpickr(elements.datePickerEl, { dateFormat: "d-m-Y" });
+            let datePickerOnChange = null;
+            const datePicker = (window.flatpickr && elements.datePickerEl)
+                ? flatpickr(elements.datePickerEl, { dateFormat: "d-m-Y" })
+                : {
+                    setDate(value, triggerChange = false) {
+                        const dateObj = value instanceof Date ? value : new Date(value);
+                        const safeDate = Number.isNaN(dateObj.getTime()) ? new Date() : dateObj;
+                        const formatted = formatDateDDMMYYYY(safeDate);
+                        if (elements.datePickerEl) elements.datePickerEl.value = formatted;
+                        if (triggerChange && typeof datePickerOnChange === 'function') {
+                            datePickerOnChange([], formatted);
+                        }
+                    },
+                    set(option, callback) {
+                        if (option === 'onChange') datePickerOnChange = callback;
+                    }
+                };
             
             const showToast = (message, isError = false) => {
                 elements.toast.textContent = message;
@@ -1244,7 +1294,10 @@
                 updateUndoRedoButtons();
             };
 
-            const onInputChange = (field, value) => setState({ [field]: value });
+            const onInputChange = (field, value) => {
+                if (state[field] === value) return;
+                setState({ [field]: value });
+            };
             const onTimeFieldChange = (field) => (e) => {
                 const nextValue = e.target.value;
                 if (state[field] === nextValue) return;
@@ -1360,6 +1413,9 @@
             });
 
             datePicker.set("onChange", (_, str) => onInputChange("date", str));
+            if (!window.flatpickr && elements.datePickerEl) {
+                elements.datePickerEl.addEventListener('input', (event) => onInputChange('date', event.target.value.trim()));
+            }
             const setDateByOffset = (offsetDays) => {
                 const target = new Date();
                 target.setDate(target.getDate() + offsetDays);
@@ -1387,7 +1443,7 @@
 
             const resetForm = () => {
                 if (confirm("Reset form? All data will be cleared.")) { 
-                    localStorage.removeItem(STORAGE_KEY);
+                    safeStorage.remove(STORAGE_KEY);
                     const clearedState = getInitialState();
 
                     state = clearedState;
