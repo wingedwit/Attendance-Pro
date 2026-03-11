@@ -837,11 +837,10 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         const STORAGE_KEY = 'attendanceProData';
-        const AUTOSUGGEST_STORAGE_KEY = 'attendanceProAutosuggest';
-        const AUTOSUGGEST_FIELDS = ['facultyName', 'srName', 'lectureTopic', 'theoryType', 'batch'];
-        const AUTOSUGGEST_MAX_ITEMS = 15;
         let debounceTimer = null;
         const DEBOUNCE_DELAY = 300;
+        const SAVE_DEBOUNCE_DELAY = 180;
+        const MAX_UNDO_HISTORY = 200;
         const safeStorage = {
             get(key) {
                 try { return localStorage.getItem(key); }
@@ -944,93 +943,10 @@
             let undoStack = [];
             let redoStack = [];
             let saveTimeout = null;
-            let autosuggestHistory = {};
-            let autosuggestActiveField = null;
-            let autosuggestActiveValue = '';
-            let autosuggestTypedValue = '';
-            const autosuggestSuppressUntil = {};
-
-            const normalizeSuggestValue = (value) => String(value || '').replace(/\s+/g, ' ').trim();
-
-            const loadAutosuggestHistory = () => {
-                const raw = safeStorage.get(AUTOSUGGEST_STORAGE_KEY);
-                if (!raw) return {};
-                try {
-                    const parsed = JSON.parse(raw);
-                    return typeof parsed === 'object' && parsed !== null ? parsed : {};
-                } catch (e) {
-                    return {};
-                }
-            };
-
-            const persistAutosuggestHistory = () => {
-                safeStorage.set(AUTOSUGGEST_STORAGE_KEY, JSON.stringify(autosuggestHistory));
-            };
-
-            const addAutosuggestEntry = (field, value) => {
-                const nextValue = normalizeSuggestValue(value);
-                if (!AUTOSUGGEST_FIELDS.includes(field) || nextValue.length < 2) return;
-                const existing = Array.isArray(autosuggestHistory[field]) ? autosuggestHistory[field] : [];
-                const deduped = existing.filter(item => item.toLowerCase() !== nextValue.toLowerCase());
-                autosuggestHistory[field] = [nextValue, ...deduped].slice(0, AUTOSUGGEST_MAX_ITEMS);
-                persistAutosuggestHistory();
-            };
-
-            const hideAutosuggest = (restoreTyped = false) => {
-                if (restoreTyped && autosuggestActiveField) {
-                    const inputEl = elements[autosuggestActiveField];
-                    if (inputEl) inputEl.value = autosuggestTypedValue;
-                }
-                autosuggestActiveField = null;
-                autosuggestActiveValue = '';
-                autosuggestTypedValue = '';
-            };
-
-            const findAutosuggestMatch = (field, typedValue) => {
-                const normalizedTyped = normalizeSuggestValue(typedValue);
-                if (!normalizedTyped) return '';
-                const haystack = Array.isArray(autosuggestHistory[field]) ? autosuggestHistory[field] : [];
-                const typedLower = normalizedTyped.toLowerCase();
-                const match = haystack.find(item => item.toLowerCase().startsWith(typedLower) && item.length > normalizedTyped.length);
-                return match || '';
-            };
-
-            const showAutosuggest = (field, inputEl, typedValue) => {
-                if (!inputEl || inputEl.offsetParent === null) {
-                    hideAutosuggest();
-                    return;
-                }
-                const suggestion = findAutosuggestMatch(field, typedValue);
-                if (!suggestion) {
-                    hideAutosuggest();
-                    return;
-                }
-
-                autosuggestActiveField = field;
-                autosuggestActiveValue = suggestion;
-                autosuggestTypedValue = String(typedValue || '');
-                inputEl.value = suggestion;
-                try {
-                    inputEl.setSelectionRange(autosuggestTypedValue.length, suggestion.length);
-                } catch (e) {
-                    // Ignore for inputs that do not support selection range.
-                }
-            };
-
-            const acceptAutosuggest = () => {
-                if (!autosuggestActiveField || !autosuggestActiveValue) return false;
-                const inputEl = elements[autosuggestActiveField];
-                if (!inputEl) return false;
-                inputEl.value = autosuggestActiveValue;
-                onInputChange(autosuggestActiveField, autosuggestActiveValue);
-                try {
-                    inputEl.setSelectionRange(autosuggestActiveValue.length, autosuggestActiveValue.length);
-                } catch (e) {
-                    // Ignore selection errors.
-                }
-                hideAutosuggest();
-                return true;
-            };
+            let persistTimer = null;
+            let persistPendingJson = null;
+            let validationCacheKey = '';
+            let validationCacheValue = null;
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -1097,12 +1013,31 @@
                 catch (e) { return getInitialState(); }
             };
 
-            const saveToStorage = () => {
-                const didPersist = safeStorage.set(STORAGE_KEY, JSON.stringify(state));
+            const persistStateNow = () => {
+                if (!persistPendingJson) return;
+                const didPersist = safeStorage.set(STORAGE_KEY, persistPendingJson);
+                persistPendingJson = null;
                 if (!didPersist) return;
                 elements.savedIndicator.classList.add('show');
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => elements.savedIndicator.classList.remove('show'), 2000);
+            };
+
+            const flushPendingSave = () => {
+                if (persistTimer) {
+                    clearTimeout(persistTimer);
+                    persistTimer = null;
+                }
+                persistStateNow();
+            };
+
+            const saveToStorage = () => {
+                persistPendingJson = JSON.stringify(state);
+                if (persistTimer) clearTimeout(persistTimer);
+                persistTimer = setTimeout(() => {
+                    persistTimer = null;
+                    persistStateNow();
+                }, SAVE_DEBOUNCE_DELAY);
             };
 
             let datePickerOnChange = null;
@@ -1243,6 +1178,17 @@
                 };
             };
 
+            const getValidationResult = (inputText) => {
+                const input = String(inputText || '');
+                const [min, max] = getRollRanges();
+                const cacheKey = `${min}|${max}|${input}`;
+                if (validationCacheKey === cacheKey && validationCacheValue) return validationCacheValue;
+                const result = validateRollNumbers(input);
+                validationCacheKey = cacheKey;
+                validationCacheValue = result;
+                return result;
+            };
+
             const getAttendanceStats = (inputNumbers, inputMode) => {
                 const [min, max] = getRollRanges();
                 if (isNaN(min) || isNaN(max) || min > max) return { presentNumbers: [], absentNumbers: [], allNumbers: [] };
@@ -1277,7 +1223,7 @@
             };
 
             const updateRollCount = (attendanceText = '') => {
-                const validation = validateRollNumbers(String(attendanceText || ''));
+                const validation = getValidationResult(attendanceText);
                 elements.rollCount.textContent = String(validation.numbers.length);
             };
 
@@ -1287,6 +1233,11 @@
                 updateRollCount(attendance);
 
                 const duration = getDurationString();
+                const formattedStartTime = formatTimeForReport(state.startTime);
+                const formattedEndTime = formatTimeForReport(state.endTime);
+                const liveReportTimeLine = (formattedStartTime && formattedEndTime)
+                    ? `${formattedStartTime} - ${formattedEndTime} (${duration})`
+                    : "N/A";
                 const row = (l, v) => `<div class="mb-3"><p class="text-xs capitalize tracking-wider opacity-60 mb-0.5 font-bold">${l}</p><p class="font-medium text-lg">${v || '—'}</p></div>`;
                 
                 let html = `
@@ -1299,7 +1250,7 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4 pt-2 border-t border-outline-light/10 mt-2 dark:border-outline-dark/10">
                                 ${row("Date", getFormattedDateWithDay(state.date))}
-                                ${row("Time (Duration)", (state.startTime && state.endTime) ? `${state.startTime} - ${state.endTime} (${duration})` : "N/A")}
+                                ${row("Time (Duration)", liveReportTimeLine)}
                             </div>
                         </div>
                 `;
@@ -1321,7 +1272,7 @@
                     return;
                 }
                 
-                const validation = validateRollNumbers(attendance);
+                const validation = getValidationResult(attendance);
                 elements.attendanceInput.classList.remove("form-input-error", "form-input-valid");
                 
                 if (validation.valid) {
@@ -1392,6 +1343,7 @@
             const recordAndRender = (newState) => {
                 state = newState;
                 undoStack.push(JSON.stringify(state));
+                if (undoStack.length > MAX_UNDO_HISTORY) undoStack.shift();
                 redoStack = [];
                 updateUndoRedoButtons();
                 renderOutput();
@@ -1533,55 +1485,7 @@
                 showToast(msg);
             });
 
-            autosuggestHistory = loadAutosuggestHistory();
-
-            AUTOSUGGEST_FIELDS.forEach((key) => {
-                const inputEl = elements[key];
-                if (!inputEl) return;
-
-                inputEl.addEventListener('input', (event) => {
-                    const nextValue = event.target.value;
-                    onInputChange(key, nextValue);
-                    if ((autosuggestSuppressUntil[key] || 0) > Date.now()) {
-                        hideAutosuggest();
-                        return;
-                    }
-                    showAutosuggest(key, inputEl, nextValue);
-                });
-
-                inputEl.addEventListener('focus', () => {
-                    showAutosuggest(key, inputEl, inputEl.value);
-                });
-
-                inputEl.addEventListener('keydown', (event) => {
-                    if (autosuggestActiveField !== key || !autosuggestActiveValue) return;
-                    if (event.key === 'ArrowRight') {
-                        const cursorAtTypedEnd = inputEl.selectionStart === autosuggestTypedValue.length;
-                        if (!cursorAtTypedEnd) return;
-                        event.preventDefault();
-                        acceptAutosuggest();
-                        return;
-                    }
-                    if (event.key === 'Tab') {
-                        acceptAutosuggest();
-                    }
-                    if (event.key === 'Backspace' || event.key === 'Delete') {
-                        autosuggestSuppressUntil[key] = Date.now() + 350;
-                        hideAutosuggest(true);
-                        return;
-                    }
-                    if (event.key === 'Escape') {
-                        hideAutosuggest(true);
-                    }
-                });
-
-                inputEl.addEventListener('blur', () => {
-                    hideAutosuggest(true);
-                    addAutosuggestEntry(key, inputEl.value);
-                });
-            });
-
-            ['minRoll', 'maxRoll'].forEach(key => {
+            ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic', 'minRoll', 'maxRoll'].forEach(key => {
                 elements[key].addEventListener('input', e => onInputChange(key, e.target.value));
             });
 
@@ -1629,6 +1533,11 @@
 
             const resetForm = () => {
                 if (confirm("Reset form? All data will be cleared.")) { 
+                    if (persistTimer) {
+                        clearTimeout(persistTimer);
+                        persistTimer = null;
+                    }
+                    persistPendingJson = null;
                     safeStorage.remove(STORAGE_KEY);
                     const clearedState = getInitialState();
 
@@ -1665,7 +1574,7 @@
             elements.clearFormButton.addEventListener("click", resetForm);
 
             const buildReportCopyText = () => {
-                const validation = validateRollNumbers(state.attendance);
+                const validation = getValidationResult(state.attendance);
                 if (!validation.valid && state.attendance.trim() !== "") { 
                     showToast("Fix errors first", true); 
                     return null;
@@ -1706,7 +1615,7 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             };
 
             const buildSheetCopyText = () => {
-                const validation = validateRollNumbers(state.attendance);
+                const validation = getValidationResult(state.attendance);
                 if (!validation.valid && state.attendance.trim() !== "") {
                     showToast("Invalid roll numbers", true);
                     return null;
@@ -1792,6 +1701,12 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             undoStack.push(JSON.stringify(initialState));
             loadStateWithoutRecording(initialState);
             switchSection('section1');
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') flushPendingSave();
+            });
+            window.addEventListener('pagehide', flushPendingSave);
+            window.addEventListener('beforeunload', flushPendingSave);
         });
     </script>
 </body>
