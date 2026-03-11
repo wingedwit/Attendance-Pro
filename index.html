@@ -915,6 +915,7 @@
             let autosuggestActiveField = null;
             let autosuggestActiveValue = '';
             let autosuggestTypedValue = '';
+            const autosuggestSuppressUntil = {};
 
             const normalizeSuggestValue = (value) => String(value || '').replace(/\s+/g, ' ').trim();
 
@@ -1495,6 +1496,10 @@
                 inputEl.addEventListener('input', (event) => {
                     const nextValue = event.target.value;
                     onInputChange(key, nextValue);
+                    if ((autosuggestSuppressUntil[key] || 0) > Date.now()) {
+                        hideAutosuggest();
+                        return;
+                    }
                     showAutosuggest(key, inputEl, nextValue);
                 });
 
@@ -1513,6 +1518,11 @@
                     }
                     if (event.key === 'Tab') {
                         acceptAutosuggest();
+                    }
+                    if (event.key === 'Backspace' || event.key === 'Delete') {
+                        autosuggestSuppressUntil[key] = Date.now() + 350;
+                        hideAutosuggest(true);
+                        return;
                     }
                     if (event.key === 'Escape') {
                         hideAutosuggest(true);
