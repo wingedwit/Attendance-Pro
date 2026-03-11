@@ -71,10 +71,11 @@
                 radial-gradient(circle at top left, rgba(23, 105, 255, 0.18), transparent 30%),
                 radial-gradient(circle at bottom right, rgba(255, 138, 61, 0.12), transparent 24%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent 48%);
-            overflow: hidden;
-            min-height: 100dvh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
             width: 100%;
-            height: 100%;
+            height: auto;
             margin: 0;
         }
         .dark body { 
@@ -345,6 +346,9 @@
             background-color: rgba(52, 168, 83, 0.2);
             color: #88d3a0;
         }
+        .mobile-download-menu {
+            display: none;
+        }
 
         .toggle-btn { transition: all 0.2s; }
         .toggle-btn.active { font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -505,9 +509,9 @@
             padding: 1.5rem;
             gap: 1.25rem;
             box-sizing: border-box;
-            height: 100dvh;
+            height: auto;
             min-height: 100dvh;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .panel-shell {
@@ -546,30 +550,70 @@
             background: linear-gradient(180deg, rgba(9, 13, 19, 0.28), rgba(3, 5, 9, 0.12));
         }
 
-        #desktopOnlyNotice {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem;
-            z-index: 9999;
-            background: linear-gradient(180deg, rgba(237, 245, 255, 0.97), rgba(225, 237, 255, 0.98));
-            color: var(--on-surface-light);
+        @media (min-width: 1025px) {
+            body {
+                overflow: hidden;
+                height: 100dvh;
+            }
+            .app-shell {
+                height: 100dvh;
+                min-height: 100dvh;
+                overflow: hidden;
+            }
+            aside,
+            main {
+                height: 100%;
+            }
         }
 
-        .dark #desktopOnlyNotice {
-            background: linear-gradient(180deg, rgba(8, 11, 16, 0.97), rgba(14, 19, 27, 0.98));
-            color: var(--on-surface-dark);
+        @media (max-width: 1180px) {
+            .app-shell {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            #inputContainer {
+                padding: 1.25rem;
+            }
+            #outputPanel {
+                padding: 1.25rem;
+            }
         }
 
-        .desktop-blocked .app-shell {
-            display: none !important;
+        @media (max-width: 1024px) {
+            .app-shell {
+                flex-direction: column;
+            }
+            .panel-shell {
+                width: 100% !important;
+            }
+            #liveReportPanel {
+                display: none !important;
+            }
+            .mobile-download-menu {
+                display: inline-block;
+            }
+            aside,
+            main {
+                height: auto !important;
+            }
         }
 
-        .desktop-blocked #desktopOnlyNotice {
-            display: flex;
+        @media (max-width: 640px) {
+            .caps-bold-heading {
+                font-size: 1.125rem;
+                line-height: 1.5rem;
+            }
+
+            #section1 .grid,
+            #section2 .grid,
+            .grid.grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .developer-credit {
+                flex-wrap: wrap;
+                gap: 0.6rem;
+            }
         }
 
     </style>
@@ -579,13 +623,6 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
             return `${day}-${month}-${year}`;
-        }
-
-        function updateDesktopLock() {
-            const root = document.documentElement;
-            const isWideEnough = window.innerWidth >= 1025;
-            const isCoarsePointer = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-            root.classList.toggle('desktop-blocked', !isWideEnough || Boolean(isCoarsePointer));
         }
 
         function applySystemTheme(isDark) {
@@ -602,12 +639,10 @@
         }
 
         applySystemTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        updateDesktopLock();
-        window.addEventListener('resize', updateDesktopLock, { passive: true });
     </script>
 </head>
 
-<body class="h-screen w-screen">
+<body>
 
     <div class="app-shell flex h-full w-full">
     <aside class="panel-shell w-1/2 flex flex-col h-full">
@@ -727,7 +762,7 @@
                 </div>
 
                 <div class="flex-1 relative">
-                    <textarea id="attendanceInput" inputmode="numeric" class="form-input-m3 w-full h-full p-6 font-mono text-lg rounded-2xl resize-none overflow-y-auto"></textarea>
+                    <textarea id="attendanceInput" inputmode="numeric" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" class="form-input-m3 w-full h-full p-6 font-mono text-lg rounded-2xl resize-none overflow-y-auto"></textarea>
                     
                     <div class="absolute bottom-4 right-4 flex gap-3">
                         <button id="sortAndHighlightButton" class="action-btn px-5 py-2.5 rounded-full text-sm font-medium transition-shadow flex items-center gap-2">
@@ -749,8 +784,19 @@
 
                 <div class="section-footer flex items-center justify-between gap-4">
                     <button class="action-btn secondary px-8 py-3 rounded-full font-medium text-lg" data-switch="section2">&larr; Previous</button>
-                    <div class="count-display action-btn px-8 py-3 rounded-full font-medium text-lg">
-                        Count: <span id="rollCount" class="font-bold">0</span>
+                    <div class="flex items-center gap-3">
+                        <div class="count-display action-btn px-8 py-3 rounded-full font-medium text-lg">
+                            Count: <span id="rollCount" class="font-bold">0</span>
+                        </div>
+                        <div class="download-menu mobile-download-menu" id="mobileDownloadMenu">
+                            <button id="mobileDownloadButton" type="button" class="action-btn primary px-5 py-3 rounded-full font-medium text-sm" title="Download Options" aria-label="Download Options" aria-haspopup="menu" aria-expanded="false">
+                                Download
+                            </button>
+                            <div id="mobileDownloadDropdown" class="download-dropdown" role="menu">
+                                <button type="button" id="mobileDownloadOptionReport" class="download-option" role="menuitem">Copy G-Doc Data</button>
+                                <button type="button" id="mobileDownloadOptionSheet" class="download-option" data-kind="sheet" role="menuitem">Copy G-Sheet Data</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -777,7 +823,7 @@
         </div>
     </aside>
 
-    <main class="panel-shell w-1/2 flex flex-col h-full">
+    <main id="liveReportPanel" class="panel-shell w-1/2 flex flex-col h-full">
         <div class="p-6 shrink-0" id="liveReportHeader">
             <div class="flex justify-between items-center h-12 relative">
                 <div>
@@ -807,13 +853,8 @@
     <div id="toast"></div>
     <div id="savedIndicator">Saved</div>
     </div>
-    <div id="desktopOnlyNotice" aria-live="polite">
-        <div>
-            <h2 class="caps-bold-heading mb-3">Desktop only</h2>
-        </div>
-    </div>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         const STORAGE_KEY = 'attendanceProData';
         const AUTOSUGGEST_STORAGE_KEY = 'attendanceProAutosuggest';
@@ -893,6 +934,8 @@
                 undoButton: document.getElementById("undoButton"), redoButton: document.getElementById("redoButton"), 
                 downloadMenu: document.getElementById("downloadMenu"), downloadButton: document.getElementById("downloadButton"),
                 downloadOptionReport: document.getElementById("downloadOptionReport"), downloadOptionSheet: document.getElementById("downloadOptionSheet"),
+                mobileDownloadMenu: document.getElementById("mobileDownloadMenu"), mobileDownloadButton: document.getElementById("mobileDownloadButton"),
+                mobileDownloadOptionReport: document.getElementById("mobileDownloadOptionReport"), mobileDownloadOptionSheet: document.getElementById("mobileDownloadOptionSheet"),
                 clearFormButton: document.getElementById("clearFormButton"), outputPanel: document.getElementById("outputPanel"), 
                 toast: document.getElementById("toast"), rollCount: document.getElementById("rollCount"),
                 attendanceModeToggle: document.getElementById("attendanceModeToggle"),
@@ -1390,6 +1433,12 @@
                 if (state[field] === value) return;
                 setState({ [field]: value });
             };
+            const onDateChange = (value) => {
+                const nextDate = String(value || '').trim();
+                if (!nextDate) return;
+                // Always render for date selection, even if same date is reselected.
+                setState({ date: nextDate });
+            };
             const onTimeFieldChange = (field) => (e) => {
                 const nextValue = e.target.value;
                 if (state[field] === nextValue) return;
@@ -1402,6 +1451,11 @@
 
                 if (debounceTimer) clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => setState({ attendance: value }), DEBOUNCE_DELAY);
+            });
+
+            elements.attendanceInput.addEventListener('focus', () => {
+                // Reinforce numeric keyboard intent on mobile browsers.
+                elements.attendanceInput.setAttribute('inputmode', 'numeric');
             });
 
             elements.clearRollsButton.addEventListener('click', () => {
@@ -1552,9 +1606,9 @@
                 }
             });
 
-            datePicker.set("onChange", (_, str) => onInputChange("date", str));
+            datePicker.set("onChange", (_, str) => onDateChange(str));
             if (!window.flatpickr && elements.datePickerEl) {
-                elements.datePickerEl.addEventListener('input', (event) => onInputChange('date', event.target.value.trim()));
+                elements.datePickerEl.addEventListener('input', (event) => onDateChange(event.target.value));
             }
             const setDateByOffset = (offsetDays) => {
                 const target = new Date();
@@ -1683,35 +1737,63 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 return rows.join('\n');
             };
 
-            const closeDownloadMenu = () => {
-                elements.downloadMenu.classList.remove('open');
-                elements.downloadButton.setAttribute('aria-expanded', 'false');
+            const allDownloadMenus = [
+                { menu: elements.downloadMenu, button: elements.downloadButton },
+                { menu: elements.mobileDownloadMenu, button: elements.mobileDownloadButton }
+            ].filter(item => item.menu && item.button);
+
+            const closeAllDownloadMenus = () => {
+                allDownloadMenus.forEach(({ menu, button }) => {
+                    menu.classList.remove('open');
+                    button.setAttribute('aria-expanded', 'false');
+                });
             };
 
-            elements.downloadButton.addEventListener("click", (event) => {
-                event.stopPropagation();
-                const isOpen = elements.downloadMenu.classList.toggle('open');
-                elements.downloadButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            });
+            const setupDownloadMenu = (menuEl, buttonEl, reportEl, sheetEl) => {
+                if (!menuEl || !buttonEl || !reportEl || !sheetEl) return;
 
-            elements.downloadOptionReport.addEventListener("click", () => {
-                const text = buildReportCopyText();
-                if (text) copyText(text, "Copied", "G-Doc Data");
-                closeDownloadMenu();
-            });
+                buttonEl.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    const willOpen = !menuEl.classList.contains('open');
+                    closeAllDownloadMenus();
+                    menuEl.classList.toggle('open', willOpen);
+                    buttonEl.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                });
 
-            elements.downloadOptionSheet.addEventListener("click", () => {
-                const text = buildSheetCopyText();
-                if (text) copyText(text, "Copied", "G-Sheet Data");
-                closeDownloadMenu();
-            });
+                reportEl.addEventListener("click", () => {
+                    const text = buildReportCopyText();
+                    if (text) copyText(text, "Copied", "G-Doc Data");
+                    closeAllDownloadMenus();
+                });
+
+                sheetEl.addEventListener("click", () => {
+                    const text = buildSheetCopyText();
+                    if (text) copyText(text, "Copied", "G-Sheet Data");
+                    closeAllDownloadMenus();
+                });
+            };
+
+            setupDownloadMenu(
+                elements.downloadMenu,
+                elements.downloadButton,
+                elements.downloadOptionReport,
+                elements.downloadOptionSheet
+            );
+
+            setupDownloadMenu(
+                elements.mobileDownloadMenu,
+                elements.mobileDownloadButton,
+                elements.mobileDownloadOptionReport,
+                elements.mobileDownloadOptionSheet
+            );
 
             document.addEventListener("click", (event) => {
-                if (!elements.downloadMenu.contains(event.target)) closeDownloadMenu();
+                const clickInsideAnyMenu = allDownloadMenus.some(({ menu }) => menu.contains(event.target));
+                if (!clickInsideAnyMenu) closeAllDownloadMenus();
             });
 
             document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") closeDownloadMenu();
+                if (event.key === "Escape") closeAllDownloadMenus();
             });
 
             document.querySelectorAll('.nav-section-btn').forEach(btn => {
