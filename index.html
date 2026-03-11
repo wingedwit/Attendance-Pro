@@ -1102,9 +1102,15 @@
                 elements.redoButton.disabled = redoStack.length === 0;
             };
 
+            const updateRollCount = (attendanceText = '') => {
+                const validation = validateRollNumbers(String(attendanceText || ''));
+                elements.rollCount.textContent = String(validation.numbers.length);
+            };
+
             const renderOutput = () => {
                 const { attendance, attendanceInputMode } = state;
                 const [minRoll, maxRoll] = getRollRanges();
+                updateRollCount(attendance);
 
                 const duration = getDurationString();
                 const row = (l, v) => `<div class="mb-3"><p class="text-xs capitalize tracking-wider opacity-60 mb-0.5 font-bold">${l}</p><p class="font-medium text-lg">${v || '—'}</p></div>`;
@@ -1226,12 +1232,13 @@
                 for (const key in state) {
                     if (elements[key] && typeof elements[key].value !== 'undefined') { elements[key].value = state[key]; }
                 }
+
+                // Keep textarea content in sync with stored attendance across refresh/undo/redo.
+                elements.attendanceInput.value = state.attendance || '';
                 
                 toggleClassTypeFields();
                 updateAttendanceModeUI(state.attendanceInputMode || 'present');
-                
-                const v = validateRollNumbers(state.attendance);
-                elements.rollCount.textContent = v.numbers.length;
+                updateRollCount(elements.attendanceInput.value);
 
                 renderOutput();
                 updateUndoRedoButtons();
@@ -1246,8 +1253,7 @@
 
             elements.attendanceInput.addEventListener('input', e => {
                 const value = e.target.value;
-                const v = validateRollNumbers(value);
-                elements.rollCount.textContent = v.numbers.length;
+                updateRollCount(value);
 
                 if (debounceTimer) clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => setState({ attendance: value }), DEBOUNCE_DELAY);
@@ -1255,7 +1261,7 @@
 
             elements.clearRollsButton.addEventListener('click', () => {
                 elements.attendanceInput.value = '';
-                elements.rollCount.textContent = '0';
+                updateRollCount('');
                 elements.errorMessage.textContent = '';
                 elements.attendanceInput.classList.remove('form-input-valid', 'form-input-error');
                 setState({ attendance: '' });
@@ -1322,9 +1328,7 @@
                 }
 
                 elements.attendanceInput.value = newInput;
-
-                const v = validateRollNumbers(newInput);
-                elements.rollCount.textContent = v.numbers.length;
+                updateRollCount(newInput);
 
                 setState({ attendance: newInput });
 
