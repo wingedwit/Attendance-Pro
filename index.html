@@ -864,16 +864,28 @@
                 }
             }
         };
+        let cachedSectionNodes = null;
+        let cachedNavButtons = null;
+
+        const getSectionNodes = () => {
+            if (!cachedSectionNodes) cachedSectionNodes = Array.from(document.querySelectorAll('.section-content'));
+            return cachedSectionNodes;
+        };
+
+        const getNavButtons = () => {
+            if (!cachedNavButtons) cachedNavButtons = Array.from(document.querySelectorAll('.nav-section-btn'));
+            return cachedNavButtons;
+        };
 
         function switchSection(targetId) {
-            document.querySelectorAll('.section-content').forEach(el => {
+            getSectionNodes().forEach(el => {
                 el.classList.add('hidden');
             });
             const target = document.getElementById(targetId);
             if (!target) return;
             target.classList.remove('hidden');
 
-            document.querySelectorAll('.nav-section-btn').forEach(btn => {
+            getNavButtons().forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.target === targetId);
             });
 
@@ -886,7 +898,7 @@
         }
 
         function getCurrentSectionId() {
-            const visibleSection = Array.from(document.querySelectorAll('.section-content'))
+            const visibleSection = getSectionNodes()
                 .find(section => !section.classList.contains('hidden'));
             return visibleSection ? visibleSection.id : 'section1';
         }
@@ -988,7 +1000,6 @@
                     hideAutosuggest();
                     return;
                 }
-                const normalizedTyped = normalizeSuggestValue(typedValue);
                 const suggestion = findAutosuggestMatch(field, typedValue);
                 if (!suggestion) {
                     hideAutosuggest();
@@ -1386,7 +1397,11 @@
                 renderOutput();
                 saveToStorage();
             };
-            const setState = (patch) => recordAndRender({ ...state, ...patch });
+            const hasPatchChanges = (patch) => Object.keys(patch).some(key => state[key] !== patch[key]);
+            const setState = (patch) => {
+                if (!hasPatchChanges(patch)) return;
+                recordAndRender({ ...state, ...patch });
+            };
 
             const loadStateWithoutRecording = (newState) => {
                 state = newState;
@@ -1414,7 +1429,11 @@
             const onDateChange = (value) => {
                 const nextDate = String(value || '').trim();
                 if (!nextDate) return;
-                // Always render for date selection, even if same date is reselected.
+                // Re-render when the same date is reselected, without creating an extra undo step.
+                if (state.date === nextDate) {
+                    renderOutput();
+                    return;
+                }
                 setState({ date: nextDate });
             };
             const onTimeFieldChange = (field) => (e) => {
