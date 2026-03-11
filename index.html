@@ -1504,7 +1504,12 @@
                     typeLine = `Practical (${state.batch})`;
                 }
 
-                const text = `Date: ${state.date}, Time: ${timeLine}
+                const dateWithDay = getFormattedDateWithDay(state.date).replace(
+                    /^(\d{2})-(\d{2})-(\d{4})/,
+                    '$1/$2/$3'
+                );
+
+                const text = `Date: ${dateWithDay}, Time: ${timeLine}
 Faculty - ${state.facultyName || '—'}, Senior Resident - ${state.srName || '—'}
 Topic - ${state.lectureTopic || '—'}
 Type - ${typeLine || '—'}
