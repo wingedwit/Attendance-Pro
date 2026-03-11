@@ -816,6 +816,9 @@
     <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         const STORAGE_KEY = 'attendanceProData';
+        const AUTOSUGGEST_STORAGE_KEY = 'attendanceProAutosuggest';
+        const AUTOSUGGEST_FIELDS = ['facultyName', 'srName', 'lectureTopic', 'theoryType', 'batch'];
+        const AUTOSUGGEST_MAX_ITEMS = 15;
         let debounceTimer = null;
         const DEBOUNCE_DELAY = 300;
         const safeStorage = {
@@ -908,6 +911,93 @@
             let undoStack = [];
             let redoStack = [];
             let saveTimeout = null;
+            let autosuggestHistory = {};
+            let autosuggestActiveField = null;
+            let autosuggestActiveValue = '';
+            let autosuggestTypedValue = '';
+
+            const normalizeSuggestValue = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+            const loadAutosuggestHistory = () => {
+                const raw = safeStorage.get(AUTOSUGGEST_STORAGE_KEY);
+                if (!raw) return {};
+                try {
+                    const parsed = JSON.parse(raw);
+                    return typeof parsed === 'object' && parsed !== null ? parsed : {};
+                } catch (e) {
+                    return {};
+                }
+            };
+
+            const persistAutosuggestHistory = () => {
+                safeStorage.set(AUTOSUGGEST_STORAGE_KEY, JSON.stringify(autosuggestHistory));
+            };
+
+            const addAutosuggestEntry = (field, value) => {
+                const nextValue = normalizeSuggestValue(value);
+                if (!AUTOSUGGEST_FIELDS.includes(field) || nextValue.length < 2) return;
+                const existing = Array.isArray(autosuggestHistory[field]) ? autosuggestHistory[field] : [];
+                const deduped = existing.filter(item => item.toLowerCase() !== nextValue.toLowerCase());
+                autosuggestHistory[field] = [nextValue, ...deduped].slice(0, AUTOSUGGEST_MAX_ITEMS);
+                persistAutosuggestHistory();
+            };
+
+            const hideAutosuggest = (restoreTyped = false) => {
+                if (restoreTyped && autosuggestActiveField) {
+                    const inputEl = elements[autosuggestActiveField];
+                    if (inputEl) inputEl.value = autosuggestTypedValue;
+                }
+                autosuggestActiveField = null;
+                autosuggestActiveValue = '';
+                autosuggestTypedValue = '';
+            };
+
+            const findAutosuggestMatch = (field, typedValue) => {
+                const normalizedTyped = normalizeSuggestValue(typedValue);
+                if (!normalizedTyped) return '';
+                const haystack = Array.isArray(autosuggestHistory[field]) ? autosuggestHistory[field] : [];
+                const typedLower = normalizedTyped.toLowerCase();
+                const match = haystack.find(item => item.toLowerCase().startsWith(typedLower) && item.length > normalizedTyped.length);
+                return match || '';
+            };
+
+            const showAutosuggest = (field, inputEl, typedValue) => {
+                if (!inputEl || inputEl.offsetParent === null) {
+                    hideAutosuggest();
+                    return;
+                }
+                const normalizedTyped = normalizeSuggestValue(typedValue);
+                const suggestion = findAutosuggestMatch(field, typedValue);
+                if (!suggestion) {
+                    hideAutosuggest();
+                    return;
+                }
+
+                autosuggestActiveField = field;
+                autosuggestActiveValue = suggestion;
+                autosuggestTypedValue = String(typedValue || '');
+                inputEl.value = suggestion;
+                try {
+                    inputEl.setSelectionRange(autosuggestTypedValue.length, suggestion.length);
+                } catch (e) {
+                    // Ignore for inputs that do not support selection range.
+                }
+            };
+
+            const acceptAutosuggest = () => {
+                if (!autosuggestActiveField || !autosuggestActiveValue) return false;
+                const inputEl = elements[autosuggestActiveField];
+                if (!inputEl) return false;
+                inputEl.value = autosuggestActiveValue;
+                onInputChange(autosuggestActiveField, autosuggestActiveValue);
+                try {
+                    inputEl.setSelectionRange(autosuggestActiveValue.length, autosuggestActiveValue.length);
+                } catch (e) {
+                    // Ignore selection errors.
+                }
+                hideAutosuggest();
+                return true;
+            };
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -1396,10 +1486,49 @@
                 showToast(msg);
             });
 
-            ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic', 'minRoll', 'maxRoll'].forEach(key => {
-                elements[key].addEventListener(elements[key].nodeName === 'SELECT' ? 'change' : 'input', e => onInputChange(key, e.target.value));
+            autosuggestHistory = loadAutosuggestHistory();
+
+            AUTOSUGGEST_FIELDS.forEach((key) => {
+                const inputEl = elements[key];
+                if (!inputEl) return;
+
+                inputEl.addEventListener('input', (event) => {
+                    const nextValue = event.target.value;
+                    onInputChange(key, nextValue);
+                    showAutosuggest(key, inputEl, nextValue);
+                });
+
+                inputEl.addEventListener('focus', () => {
+                    showAutosuggest(key, inputEl, inputEl.value);
+                });
+
+                inputEl.addEventListener('keydown', (event) => {
+                    if (autosuggestActiveField !== key || !autosuggestActiveValue) return;
+                    if (event.key === 'ArrowRight') {
+                        const cursorAtTypedEnd = inputEl.selectionStart === autosuggestTypedValue.length;
+                        if (!cursorAtTypedEnd) return;
+                        event.preventDefault();
+                        acceptAutosuggest();
+                        return;
+                    }
+                    if (event.key === 'Tab') {
+                        acceptAutosuggest();
+                    }
+                    if (event.key === 'Escape') {
+                        hideAutosuggest(true);
+                    }
+                });
+
+                inputEl.addEventListener('blur', () => {
+                    hideAutosuggest(true);
+                    addAutosuggestEntry(key, inputEl.value);
+                });
             });
-            
+
+            ['minRoll', 'maxRoll'].forEach(key => {
+                elements[key].addEventListener('input', e => onInputChange(key, e.target.value));
+            });
+
             elements.classType.addEventListener('change', e => {
                 toggleClassTypeFields();
                 onInputChange('classType', e.target.value);
