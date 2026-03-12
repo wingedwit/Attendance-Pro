@@ -5,6 +5,7 @@
         const FAST_INPUT_DEBOUNCE_DELAY = 120;
         const SAVE_DEBOUNCE_DELAY = 180;
         const MAX_UNDO_HISTORY = 200;
+        const PILLS_INLINE_RENDER_LIMIT = 80;
         const safeStorage = {
             get(key) {
                 try { return localStorage.getItem(key); }
@@ -592,8 +593,28 @@
 
                 const presentRanges = groupNumbersIntoRangesCached(presentNumbers);
                 const absentRanges = groupNumbersIntoRangesCached(absentNumbers);
-                const presentPillsHtml = presentRanges.map(r => `<span class="present-pill inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${r}</span>`).join('');
-                const absentPillsHtml = absentRanges.map(r => `<span class="absent-pill inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${r}</span>`).join('');
+                const buildPillsHtml = (ranges, pillClass, headingLabel) => {
+                    if (!ranges.length) return '';
+                    const toPill = (range) => `<span class="${pillClass} inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${range}</span>`;
+
+                    if (ranges.length <= PILLS_INLINE_RENDER_LIMIT) {
+                        return `<div class="flex flex-wrap">${ranges.map(toPill).join('')}</div>`;
+                    }
+
+                    const previewRanges = ranges.slice(0, PILLS_INLINE_RENDER_LIMIT);
+                    const remaining = ranges.length - previewRanges.length;
+                    return `
+                        <div class="space-y-3">
+                            <div class="flex flex-wrap">${previewRanges.map(toPill).join('')}</div>
+                            <details class="rounded-lg border border-outline-light/20 dark:border-outline-dark/20 p-3">
+                                <summary class="cursor-pointer text-sm font-semibold">Show ${remaining} more ${escapeHtml(headingLabel.toLowerCase())} ranges</summary>
+                                <div class="flex flex-wrap mt-3">${ranges.slice(PILLS_INLINE_RENDER_LIMIT).map(toPill).join('')}</div>
+                            </details>
+                        </div>
+                    `;
+                };
+                const presentPillsHtml = buildPillsHtml(presentRanges, 'present-pill', 'Present');
+                const absentPillsHtml = buildPillsHtml(absentRanges, 'absent-pill', 'Absent');
                 html += `
                         <div class="grid grid-cols-2 gap-4">
                             <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
@@ -614,8 +635,8 @@
                             </div>
                         </div>
 
-                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p><div class="flex flex-wrap">${presentPillsHtml}</div></div>` : ''}
-                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p><div class="flex flex-wrap">${absentPillsHtml}</div></div>` : ''}
+                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p>${presentPillsHtml}</div>` : ''}
+                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p>${absentPillsHtml}</div>` : ''}
                     </div>
                 `;
                 setOutputHtml(html);
