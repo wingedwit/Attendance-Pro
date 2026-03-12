@@ -1,4 +1,3 @@
-        const APP_VERSION = '1.0.1';
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;
@@ -117,8 +116,14 @@
             let statsCacheMin = NaN;
             let statsCacheMax = NaN;
             let statsCacheResult = null;
+            let allNumbersCacheMin = NaN;
+            let allNumbersCacheMax = NaN;
+            let allNumbersCache = [];
             let lastOutputHtml = '';
             const fastInputTimers = new Map();
+            const groupedRangesCache = new WeakMap();
+            let rollCountRafId = 0;
+            let pendingRollCountInput = '';
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -213,7 +218,25 @@
                 saveTimeout = setTimeout(() => elements.savedIndicator.classList.remove('show'), 2000);
             };
 
+            const cancelPendingAttendanceCommit = () => {
+                if (!debounceTimer) return;
+                clearTimeout(debounceTimer);
+                debounceTimer = null;
+            };
+
+            const flushPendingAttendanceCommit = () => {
+                if (!debounceTimer) return;
+                clearTimeout(debounceTimer);
+                debounceTimer = null;
+                const latestValue = elements.attendanceInput.value;
+                if (state.attendance === latestValue) return;
+                state = { ...state, attendance: latestValue };
+                renderOutput();
+                saveToStorage();
+            };
+
             const flushPendingSave = () => {
+                flushPendingAttendanceCommit();
                 if (persistTimer) {
                     clearTimeout(persistTimer);
                     persistTimer = null;
@@ -293,6 +316,15 @@
                 }
                 ranges.push(start === end ? `${start}` : `${start}-${end}`);
                 return ranges;
+            };
+
+            const groupNumbersIntoRangesCached = (numbers) => {
+                if (!numbers || numbers.length === 0) return [];
+                const cached = groupedRangesCache.get(numbers);
+                if (cached) return cached;
+                const computed = groupNumbersIntoRanges(numbers);
+                groupedRangesCache.set(numbers, computed);
+                return computed;
             };
 
             const getFormattedDateWithDay = (dateString) => {
@@ -418,7 +450,12 @@
                 }
 
                 if (isNaN(min) || isNaN(max) || min > max) return { presentNumbers: [], absentNumbers: [], allNumbers: [] };
-                const allNumbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+                if (allNumbersCacheMin !== min || allNumbersCacheMax !== max) {
+                    allNumbersCache = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+                    allNumbersCacheMin = min;
+                    allNumbersCacheMax = max;
+                }
+                const allNumbers = allNumbersCache;
                 const inputNumbersSet = new Set(inputNumbers);
                 let presentNumbers, absentNumbers;
                 if (inputMode === 'absent') {
@@ -457,6 +494,21 @@
             const updateRollCount = (attendanceText = '') => {
                 const validation = getValidationResult(attendanceText);
                 elements.rollCount.textContent = String(validation.numbers.length);
+            };
+
+            const scheduleRollCountUpdate = (attendanceText = '') => {
+                pendingRollCountInput = attendanceText;
+                if (rollCountRafId) return;
+                rollCountRafId = requestAnimationFrame(() => {
+                    rollCountRafId = 0;
+                    updateRollCount(pendingRollCountInput);
+                });
+            };
+
+            const cancelScheduledRollCountUpdate = () => {
+                if (!rollCountRafId) return;
+                cancelAnimationFrame(rollCountRafId);
+                rollCountRafId = 0;
             };
 
             const setOutputHtml = (nextHtml) => {
@@ -538,8 +590,8 @@
                         <div class="quartile-marker" style="left: 75%"></div>
                     </div>`;
 
-                const presentRanges = groupNumbersIntoRanges(presentNumbers);
-                const absentRanges = groupNumbersIntoRanges(absentNumbers);
+                const presentRanges = groupNumbersIntoRangesCached(presentNumbers);
+                const absentRanges = groupNumbersIntoRangesCached(absentNumbers);
                 const presentPillsHtml = presentRanges.map(r => `<span class="present-pill inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${r}</span>`).join('');
                 const absentPillsHtml = absentRanges.map(r => `<span class="absent-pill inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${r}</span>`).join('');
                 html += `
@@ -585,6 +637,7 @@
             };
 
             const loadStateWithoutRecording = (newState) => {
+                cancelScheduledRollCountUpdate();
                 state = newState;
                 if(newState.date) datePicker.setDate(newState.date, false);
                 
@@ -625,13 +678,15 @@
 
             elements.attendanceInput.addEventListener('input', e => {
                 const value = e.target.value;
-                updateRollCount(value);
+                scheduleRollCountUpdate(value);
 
                 if (debounceTimer) clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => setState({ attendance: value }), DEBOUNCE_DELAY);
             });
 
             elements.clearRollsButton.addEventListener('click', () => {
+                cancelPendingAttendanceCommit();
+                cancelScheduledRollCountUpdate();
                 elements.attendanceInput.value = '';
                 updateRollCount('');
                 elements.errorMessage.textContent = '';
@@ -666,9 +721,10 @@
                 const newInput = sortedValid.join(', ');
 
                 elements.attendanceInput.value = newInput;
+                cancelScheduledRollCountUpdate();
                 updateRollCount(newInput);
 
-                if (debounceTimer) clearTimeout(debounceTimer);
+                cancelPendingAttendanceCommit();
                 setState({ attendance: newInput });
 
                 const validCount = sortedValid.length;
@@ -744,6 +800,8 @@
 
             const resetForm = () => {
                 if (confirm("Reset form? All data will be cleared.")) { 
+                    cancelPendingAttendanceCommit();
+                    cancelScheduledRollCountUpdate();
                     if (persistTimer) {
                         clearTimeout(persistTimer);
                         persistTimer = null;
