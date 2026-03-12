@@ -382,6 +382,28 @@
                 return result;
             };
 
+            const buildValidationErrorMessage = (validation) => {
+                if (!validation || validation.valid) return '';
+                const summarize = (label, values) => {
+                    const list = Array.isArray(values) ? values : [];
+                    const deduped = [...new Set(list.map((item) => String(item).trim()).filter(Boolean))];
+                    if (deduped.length === 0) return '';
+                    const previewLimit = 12;
+                    const preview = deduped.slice(0, previewLimit).join(', ');
+                    const extra = deduped.length > previewLimit ? `, +${deduped.length - previewLimit} more` : '';
+                    return `${label} (${deduped.length}): ${preview}${extra}`;
+                };
+
+                const parts = [
+                    summarize('Duplicates', validation.duplicates),
+                    summarize('Non-numeric', validation.errors?.nonNumeric),
+                    summarize('Out of range', validation.errors?.outOfRange),
+                    summarize('Invalid ranges', validation.errors?.invalidRange)
+                ].filter(Boolean);
+
+                return parts.join(' | ');
+            };
+
             const getAttendanceStats = (inputNumbers, inputMode) => {
                 const [min, max] = getRollRanges();
 
@@ -496,12 +518,7 @@
                     if(attendance.trim().length > 0) elements.attendanceInput.classList.add("form-input-valid");
                 } else {
                     elements.attendanceInput.classList.add("form-input-error");
-                    const errorMessages = [];
-                    if(validation.duplicates.length > 0) errorMessages.push(`Duplicates: ${validation.duplicates.join(", ")}`);
-                    if(validation.errors.nonNumeric?.length) errorMessages.push(`Non-numeric: ${validation.errors.nonNumeric.join(", ")}`);
-                    if(validation.errors.outOfRange?.length) errorMessages.push(`Out of Range: ${validation.errors.outOfRange.join(", ")}`);
-                    if(validation.errors.invalidRange?.length) errorMessages.push(`Invalid Ranges: ${validation.errors.invalidRange.join(", ")}`);
-                    elements.errorMessage.textContent = errorMessages.join('. ');
+                    elements.errorMessage.textContent = buildValidationErrorMessage(validation);
                 }
                 if (!validation.valid && attendance.trim().length > 0) {
                     html += `<div class="flex flex-col items-center justify-center p-8 opacity-50"><p>Fix validation errors to calculate stats.</p></div></div>`;
@@ -636,65 +653,26 @@
                     return;
                 }
 
-                const rawTokens = input.split(/[,\s\n]+/).filter(Boolean);
-                const validNumbers = new Set();
-                const invalidTokens = [];
-
-                rawTokens.forEach(token => {
-                    token = token.trim();
-                    if (!token) return;
-
-                    let isValid = false;
-
-                    if (token.includes('-')) {
-                        const parts = token.split('-');
-                        if (parts.length !== 2) {
-                            invalidTokens.push(token);
-                            return;
-                        }
-                        const start = Number(parts[0]);
-                        const end = Number(parts[1]);
-                        if (!isNaN(start) && !isNaN(end) && start <= end && start >= min && end <= max) {
-                            for (let i = start; i <= end; i++) {
-                                validNumbers.add(i);
-                            }
-                            isValid = true;
-                        }
-                    } else {
-                        const num = Number(token);
-                        if (!isNaN(num) && num >= min && num <= max) {
-                            validNumbers.add(num);
-                            isValid = true;
-                        }
-                    }
-
-                    if (!isValid) {
-                        invalidTokens.push(token);
-                    }
-                });
-
-                const sortedValid = Array.from(validNumbers).sort((a, b) => a - b);
-
-                let newInput = sortedValid.join(', ');
-                
-                if (invalidTokens.length > 0) {
-                    if (newInput) newInput += '\n\n';
-                    newInput += invalidTokens.join(', ');
+                const validation = getValidationResult(input);
+                if (!validation.valid) {
+                    elements.errorMessage.textContent = buildValidationErrorMessage(validation);
+                    elements.attendanceInput.classList.remove('form-input-valid');
+                    elements.attendanceInput.classList.add('form-input-error');
+                    showToast('Invalid entries found. Remove them and try sorting again.', true);
+                    return;
                 }
+
+                const sortedValid = validation.numbers;
+                const newInput = sortedValid.join(', ');
 
                 elements.attendanceInput.value = newInput;
                 updateRollCount(newInput);
 
+                if (debounceTimer) clearTimeout(debounceTimer);
                 setState({ attendance: newInput });
 
                 const validCount = sortedValid.length;
-                const invalidCount = invalidTokens.length;
-                
-                let msg = `Sorted ${validCount} valid roll${validCount !== 1 ? 's' : ''}`;
-                if (invalidCount > 1) msg += `. ${invalidCount} invalid entries moved below`;
-                else if (invalidCount === 1) msg += `. 1 invalid entry moved below`;
-                
-                showToast(msg);
+                showToast(`Sorted ${validCount} valid roll${validCount !== 1 ? 's' : ''}`);
             });
 
             const fastFields = ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic'];

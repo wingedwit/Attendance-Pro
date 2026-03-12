@@ -375,6 +375,13 @@
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
         }
 
+        #errorMessage {
+            height: auto !important;
+            min-height: 3rem;
+            line-height: 1.35;
+            white-space: normal;
+        }
+
         #savedIndicator {
             position: absolute;
             top: 50%;
