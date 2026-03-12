@@ -1,8 +1,9 @@
-        const APP_VERSION = '1.0.0';
+        const APP_VERSION = '1.0.1';
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;
         const DEBOUNCE_DELAY = 300;
+        const FAST_INPUT_DEBOUNCE_DELAY = 120;
         const SAVE_DEBOUNCE_DELAY = 180;
         const MAX_UNDO_HISTORY = 200;
         const safeStorage = {
@@ -117,6 +118,7 @@
             let statsCacheMax = NaN;
             let statsCacheResult = null;
             let lastOutputHtml = '';
+            const fastInputTimers = new Map();
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -695,8 +697,29 @@
                 showToast(msg);
             });
 
-            ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic', 'minRoll', 'maxRoll'].forEach(key => {
-                elements[key].addEventListener('input', e => onInputChange(key, e.target.value));
+            const fastFields = ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic'];
+            fastFields.forEach((key) => {
+                elements[key].addEventListener('input', (e) => {
+                    const nextValue = e.target.value;
+                    const existingTimer = fastInputTimers.get(key);
+                    if (existingTimer) clearTimeout(existingTimer);
+                    const timer = setTimeout(() => {
+                        fastInputTimers.delete(key);
+                        onInputChange(key, nextValue);
+                    }, FAST_INPUT_DEBOUNCE_DELAY);
+                    fastInputTimers.set(key, timer);
+                });
+                elements[key].addEventListener('blur', (e) => {
+                    const pendingTimer = fastInputTimers.get(key);
+                    if (pendingTimer) {
+                        clearTimeout(pendingTimer);
+                        fastInputTimers.delete(key);
+                    }
+                    onInputChange(key, e.target.value);
+                });
+            });
+            ['minRoll', 'maxRoll'].forEach((key) => {
+                elements[key].addEventListener('input', (e) => onInputChange(key, e.target.value));
             });
 
             elements.classType.addEventListener('change', e => {

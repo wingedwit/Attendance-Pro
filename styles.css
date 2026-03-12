@@ -80,7 +80,7 @@
             background-color: transparent;
             border: 1px solid var(--outline-light);
             border-radius: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.16s ease;
             font-size: 1rem; 
             position: relative;
         }
@@ -195,7 +195,7 @@
         .action-btn {
             background-color: var(--surface-container-light);
             color: var(--on-surface-variant-light);
-            transition: all 0.3s ease;
+            transition: all 0.16s ease;
             font-weight: 500;
             border: 1px solid transparent;
         }
@@ -402,7 +402,7 @@
         }
 
         .section-content {
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.14s ease, transform 0.14s ease;
         }
         .section-content.hidden {
             opacity: 0;

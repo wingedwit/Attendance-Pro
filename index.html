@@ -160,7 +160,7 @@
                 </div>
 
                 <div class="flex-1 relative">
-                    <textarea id="attendanceInput" inputmode="numeric" class="form-input-m3 w-full h-full p-6 font-mono text-lg rounded-2xl resize-none overflow-y-auto"></textarea>
+                    <textarea id="attendanceInput" inputmode="numeric" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" class="form-input-m3 w-full h-full p-6 font-mono text-lg rounded-2xl resize-none overflow-y-auto"></textarea>
                     
                     <div class="absolute bottom-4 right-4 flex gap-3">
                         <button id="sortAndHighlightButton" class="action-btn px-5 py-2.5 rounded-full text-sm font-medium transition-shadow flex items-center gap-2">
@@ -241,7 +241,7 @@
     <div id="savedIndicator">Saved</div>
     </div>
 
-    <script src="./assets/vendor/flatpickr/flatpickr.min.js"></script>
+    <script src="./assets/vendor/flatpickr/flatpickr.min.js" defer></script>
     <script src="./app.js" defer></script>
     <script src="./pwa-register.js" defer></script>
 </body>
