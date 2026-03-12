@@ -1,3 +1,4 @@
+        const APP_VERSION = '1.0.0';
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;

@@ -29,11 +29,16 @@ Run this checklist before/after safe optimization changes.
 - `Copy G-Sheet Data` copies numeric rows.
 - `Esc` or outside click closes download menu.
 
-## Autosuggest (Text Inputs)
-- Faculty/SR/Topic/Theory Type/Batch suggestions appear from history.
-- `Tab` or `ArrowRight` accepts suggestion.
-- `Backspace/Delete` allows normal deletion without sticky suggestion.
-
 ## Theme
 - Light and dark theme both readable.
 - Toast visibility acceptable in both themes.
+
+## PWA & Offline
+- App install prompt (or browser install option) appears on supported browsers.
+- Launching installed app opens in standalone mode.
+- Offline reopen shows cached app shell after one successful online load.
+- If a route is unavailable offline, fallback offline message is shown.
+
+## Release Freeze Sanity
+- Privacy note is visible and states local browser storage usage.
+- Version bump applied in `app.js` and `service-worker.js` for release cache rotation.

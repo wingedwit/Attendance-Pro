@@ -1,0 +1,5 @@
+/* Tailwind CSS build source (v4.2.1) */
+@custom-variant dark (&:where(.dark, .dark *));
+@import "tailwindcss";
+@source "./index.html";
+@source "./app.js";
