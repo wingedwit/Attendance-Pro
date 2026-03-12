@@ -528,7 +528,7 @@
                 const liveReportTimeLine = (formattedStartTime && formattedEndTime)
                     ? `${formattedStartTime} - ${formattedEndTime} (${duration})`
                     : "N/A";
-                const row = (l, v) => `<div class="mb-3"><p class="text-xs capitalize tracking-wider opacity-60 mb-0.5 font-bold">${escapeHtml(l)}</p><p class="font-medium text-lg">${escapeHtml(v || '—')}</p></div>`;
+                const row = (l, v) => `<div class="mb-3"><p class="text-sm uppercase tracking-wider opacity-90 mb-1 font-bold">${escapeHtml(l)}</p><p class="font-medium text-lg">${escapeHtml(v || '—')}</p></div>`;
                 
                 let html = `
                     <div class="space-y-6">
@@ -597,7 +597,7 @@
                 html += `
                         <div class="grid grid-cols-2 gap-4">
                             <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
-                                <p class="stats-heading opacity-60">Present</p>
+                                <p class="stats-heading opacity-90">Present</p>
                                 <div class="flex items-baseline gap-2">
                                     <p class="text-2xl font-bold text-success-light dark:text-success-dark">${presentNumbers.length}</p>
                                     <span class="text-sm opacity-50">(${presentPct.toFixed(1)}%)</span>
@@ -605,7 +605,7 @@
                                 ${createMeter(presentPct, 'bg-meter-present')}
                             </div>
                             <div class="report-card p-4 stats-card border-error-light dark:border-error-dark">
-                                <p class="stats-heading opacity-60">Absent</p>
+                                <p class="stats-heading opacity-90">Absent</p>
                                 <div class="flex items-baseline gap-2">
                                     <p class="text-2xl font-bold text-error-light dark:text-error-dark">${absentNumbers.length}</p>
                                     <span class="text-sm opacity-50">(${absentPct.toFixed(1)}%)</span>
@@ -614,8 +614,8 @@
                             </div>
                         </div>
 
-                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold capitalize opacity-60 mb-3">Present Rolls</p><div class="flex flex-wrap">${presentPillsHtml}</div></div>` : ''}
-                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold capitalize opacity-60 mb-3">Absent Rolls</p><div class="flex flex-wrap">${absentPillsHtml}</div></div>` : ''}
+                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p><div class="flex flex-wrap">${presentPillsHtml}</div></div>` : ''}
+                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p><div class="flex flex-wrap">${absentPillsHtml}</div></div>` : ''}
                     </div>
                 `;
                 setOutputHtml(html);
