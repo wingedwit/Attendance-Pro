@@ -117,12 +117,6 @@
             font-size: 0.875rem;
             letter-spacing: 0.08em;
         }
-        .nav-heading-style {
-            font-weight: 600;
-            font-size: 0.875rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
         .nav-section-btn.active {
             opacity: 1;
             color: var(--primary-light);
