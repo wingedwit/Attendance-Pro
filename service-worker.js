@@ -40,6 +40,9 @@ const OFFLINE_HTML = `<!doctype html>
 </body>
 </html>`;
 
+const shouldCacheResponse = (response) =>
+  Boolean(response) && response.ok && response.type === 'basic';
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
@@ -70,8 +73,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const fresh = await fetch(event.request);
-        const runtime = await caches.open(RUNTIME_CACHE);
-        runtime.put(event.request, fresh.clone());
+        if (shouldCacheResponse(fresh)) {
+          const runtime = await caches.open(RUNTIME_CACHE);
+          runtime.put(event.request, fresh.clone());
+        }
         return fresh;
       } catch (_) {
         const cachedPage = await caches.match(event.request);
@@ -91,9 +96,23 @@ self.addEventListener('fetch', (event) => {
     const cached = await caches.match(event.request);
     if (cached) return cached;
 
-    const fresh = await fetch(event.request);
-    const runtime = await caches.open(RUNTIME_CACHE);
-    runtime.put(event.request, fresh.clone());
-    return fresh;
+    try {
+      const fresh = await fetch(event.request);
+      if (shouldCacheResponse(fresh)) {
+        const runtime = await caches.open(RUNTIME_CACHE);
+        runtime.put(event.request, fresh.clone());
+      }
+      return fresh;
+    } catch (_) {
+      if (event.request.destination === 'document') {
+        const cachedShell = await caches.match('./index.html');
+        if (cachedShell) return cachedShell;
+        return new Response(OFFLINE_HTML, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
+      }
+      return new Response('', { status: 503, statusText: 'Offline' });
+    }
   })());
 });
