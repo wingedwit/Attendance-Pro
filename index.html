@@ -30,9 +30,14 @@
 
             const flatpickrThemeLink = document.getElementById('flatpickr-theme');
             if (flatpickrThemeLink) {
-                flatpickrThemeLink.href = isDark
+                const themeHref = isDark
                     ? './assets/vendor/flatpickr/themes/dark.css'
                     : './assets/vendor/flatpickr/themes/light.css';
+                if (flatpickrThemeLink.dataset.enabled === 'true') {
+                    flatpickrThemeLink.href = themeHref;
+                } else {
+                    flatpickrThemeLink.dataset.pendingHref = themeHref;
+                }
             }
         }
 
@@ -241,7 +246,6 @@
     <div id="savedIndicator">Saved</div>
     </div>
 
-    <script src="./assets/vendor/flatpickr/flatpickr.min.js" defer></script>
     <script src="./app.js" defer></script>
     <script src="./pwa-register.js" defer></script>
 </body>

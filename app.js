@@ -6,6 +6,7 @@
         const SAVE_DEBOUNCE_DELAY = 180;
         const MAX_UNDO_HISTORY = 200;
         const PILLS_INLINE_RENDER_LIMIT = 80;
+        const FLATPICKR_SCRIPT_SRC = './assets/vendor/flatpickr/flatpickr.min.js';
         const safeStorage = {
             get(key) {
                 try { return localStorage.getItem(key); }
@@ -120,11 +121,18 @@
             let allNumbersCacheMin = NaN;
             let allNumbersCacheMax = NaN;
             let allNumbersCache = [];
-            let lastOutputHtml = '';
+            let reportMetaNode = null;
+            let reportStatusNode = null;
+            let reportStatsNode = null;
+            let lastReportMetaHtml = '';
+            let lastReportStatusHtml = '';
+            let lastReportStatsHtml = '';
             const fastInputTimers = new Map();
             const groupedRangesCache = new WeakMap();
-            let rollCountRafId = 0;
+            let rollCountTimer = null;
             let pendingRollCountInput = '';
+            let flatpickrLoadPromise = null;
+            let flatpickrInstance = null;
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -141,6 +149,23 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+
+            const parseDDMMYYYY = (rawValue) => {
+                const value = String(rawValue || '').trim();
+                const match = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                if (!match) return null;
+                const [, day, month, year] = match;
+                const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+                if (Number.isNaN(parsed.getTime())) return null;
+                if (
+                    parsed.getDate() !== Number(day) ||
+                    parsed.getMonth() !== Number(month) - 1 ||
+                    parsed.getFullYear() !== Number(year)
+                ) {
+                    return null;
+                }
+                return parsed;
+            };
 
             const normalizeStatePayload = (savedPayload) => {
                 if (!savedPayload || typeof savedPayload !== 'object') return getInitialState();
@@ -258,22 +283,67 @@
             };
 
             let datePickerOnChange = null;
-            const datePicker = (window.flatpickr && elements.datePickerEl)
-                ? flatpickr(elements.datePickerEl, { dateFormat: "d-m-Y" })
-                : {
-                    setDate(value, triggerChange = false) {
-                        const dateObj = value instanceof Date ? value : new Date(value);
-                        const safeDate = Number.isNaN(dateObj.getTime()) ? new Date() : dateObj;
-                        const formatted = formatDateDDMMYYYY(safeDate);
-                        if (elements.datePickerEl) elements.datePickerEl.value = formatted;
-                        if (triggerChange && typeof datePickerOnChange === 'function') {
-                            datePickerOnChange([], formatted);
-                        }
-                    },
-                    set(option, callback) {
-                        if (option === 'onChange') datePickerOnChange = callback;
+            let datePicker = {
+                setDate(value, triggerChange = false) {
+                    const dateObj = value instanceof Date ? value : (parseDDMMYYYY(value) || new Date(value));
+                    const safeDate = Number.isNaN(dateObj.getTime()) ? new Date() : dateObj;
+                    const formatted = formatDateDDMMYYYY(safeDate);
+                    if (elements.datePickerEl) elements.datePickerEl.value = formatted;
+                    if (triggerChange && typeof datePickerOnChange === 'function') {
+                        datePickerOnChange([], formatted);
                     }
-                };
+                },
+                set(option, callback) {
+                    if (option === 'onChange') datePickerOnChange = callback;
+                }
+            };
+
+            const enableFlatpickrThemeStyles = () => {
+                const themeLink = document.getElementById('flatpickr-theme');
+                if (!themeLink) return;
+                themeLink.dataset.enabled = 'true';
+                if (themeLink.dataset.pendingHref) {
+                    themeLink.href = themeLink.dataset.pendingHref;
+                }
+            };
+
+            const upgradeDatePicker = () => {
+                if (flatpickrInstance || !window.flatpickr || !elements.datePickerEl) return;
+                enableFlatpickrThemeStyles();
+                flatpickrInstance = flatpickr(elements.datePickerEl, { dateFormat: "d-m-Y" });
+                if (typeof datePickerOnChange === 'function') {
+                    flatpickrInstance.set('onChange', datePickerOnChange);
+                }
+                if (state.date) {
+                    flatpickrInstance.setDate(state.date, false);
+                }
+                datePicker = flatpickrInstance;
+            };
+
+            const ensureFlatpickrLoaded = () => {
+                if (window.flatpickr) {
+                    upgradeDatePicker();
+                    return Promise.resolve(datePicker);
+                }
+                if (flatpickrLoadPromise) return flatpickrLoadPromise;
+
+                enableFlatpickrThemeStyles();
+                flatpickrLoadPromise = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = FLATPICKR_SCRIPT_SRC;
+                    script.async = true;
+                    script.onload = () => {
+                        upgradeDatePicker();
+                        resolve(datePicker);
+                    };
+                    script.onerror = () => {
+                        flatpickrLoadPromise = null;
+                        reject(new Error('Failed to load flatpickr'));
+                    };
+                    document.head.appendChild(script);
+                });
+                return flatpickrLoadPromise;
+            };
             
             const showToast = (message, isError = false) => {
                 elements.toast.textContent = message;
@@ -499,29 +569,57 @@
 
             const scheduleRollCountUpdate = (attendanceText = '') => {
                 pendingRollCountInput = attendanceText;
-                if (rollCountRafId) return;
-                rollCountRafId = requestAnimationFrame(() => {
-                    rollCountRafId = 0;
+                if (rollCountTimer) return;
+                rollCountTimer = setTimeout(() => {
+                    rollCountTimer = null;
                     updateRollCount(pendingRollCountInput);
-                });
+                }, FAST_INPUT_DEBOUNCE_DELAY);
             };
 
             const cancelScheduledRollCountUpdate = () => {
-                if (!rollCountRafId) return;
-                cancelAnimationFrame(rollCountRafId);
-                rollCountRafId = 0;
+                if (!rollCountTimer) return;
+                clearTimeout(rollCountTimer);
+                rollCountTimer = null;
             };
 
-            const setOutputHtml = (nextHtml) => {
-                if (lastOutputHtml === nextHtml) return;
-                lastOutputHtml = nextHtml;
-                elements.outputPanel.innerHTML = nextHtml;
+            const ensureOutputStructure = () => {
+                if (reportMetaNode && reportStatusNode && reportStatsNode) return;
+                elements.outputPanel.innerHTML = `
+                    <div class="space-y-6">
+                        <div id="reportMetaSection"></div>
+                        <div id="reportStatusSection"></div>
+                        <div id="reportStatsSection"></div>
+                    </div>
+                `;
+                reportMetaNode = document.getElementById('reportMetaSection');
+                reportStatusNode = document.getElementById('reportStatusSection');
+                reportStatsNode = document.getElementById('reportStatsSection');
+            };
+
+            const setSectionHtml = (node, nextHtml, lastHtmlKey) => {
+                if (!node) return nextHtml;
+                if (lastHtmlKey === nextHtml) return lastHtmlKey;
+                node.innerHTML = nextHtml;
+                return nextHtml;
+            };
+
+            const resetOutputPanel = () => {
+                reportMetaNode = null;
+                reportStatusNode = null;
+                reportStatsNode = null;
+                lastReportMetaHtml = '';
+                lastReportStatusHtml = '';
+                lastReportStatsHtml = '';
+                elements.outputPanel.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-40">
+                    <p class="text-lg">Waiting for input...</p>
+                </div>`;
             };
 
             const renderOutput = () => {
                 const { attendance, attendanceInputMode } = state;
                 const [minRoll, maxRoll] = getRollRanges();
                 updateRollCount(attendance);
+                ensureOutputStructure();
 
                 const duration = getDurationString();
                 const formattedStartTime = formatTimeForReport(state.startTime);
@@ -531,35 +629,43 @@
                     : "N/A";
                 const row = (l, v) => `<div class="mb-3"><p class="text-sm uppercase tracking-wider opacity-90 mb-1 font-bold">${escapeHtml(l)}</p><p class="font-medium text-lg">${escapeHtml(v || '—')}</p></div>`;
                 
-                let html = `
-                    <div class="space-y-6">
-                        <div class="report-card p-5">
-                            <div class="grid grid-cols-2 gap-4">
-                                ${row("Faculty", state.facultyName)}
-                                ${row("Senior Resident", state.srName || '—')}
-                                ${row("Topic", state.lectureTopic)}
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-outline-light/10 mt-2 dark:border-outline-dark/10">
-                                ${row("Date", getFormattedDateWithDay(state.date))}
-                                ${row("Time (Duration)", liveReportTimeLine)}
-                            </div>
+                const metaHtml = `
+                    <div class="report-card p-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            ${row("Faculty", state.facultyName)}
+                            ${row("Senior Resident", state.srName || '—')}
+                            ${row("Topic", state.lectureTopic)}
                         </div>
+                        <div class="grid grid-cols-2 gap-4 pt-2 border-t border-outline-light/10 mt-2 dark:border-outline-dark/10">
+                            ${row("Date", getFormattedDateWithDay(state.date))}
+                            ${row("Time (Duration)", liveReportTimeLine)}
+                        </div>
+                    </div>
                 `;
+                lastReportMetaHtml = setSectionHtml(reportMetaNode, metaHtml, lastReportMetaHtml);
 
                 elements.minRoll.classList.remove('form-input-error');
                 elements.maxRoll.classList.remove('form-input-error');
 
                 if (isNaN(minRoll) || isNaN(maxRoll)) {
-                    html += `<div class="flex flex-col items-center justify-center p-8 opacity-50 border-2 border-dashed border-outline-light/20 rounded-xl dark:border-outline-dark/20"><p>Set a valid Min/Max roll number range to see stats.</p></div></div>`;
-                    setOutputHtml(html);
+                    lastReportStatusHtml = setSectionHtml(
+                        reportStatusNode,
+                        `<div class="flex flex-col items-center justify-center p-8 opacity-50 border-2 border-dashed border-outline-light/20 rounded-xl dark:border-outline-dark/20"><p>Set a valid Min/Max roll number range to see stats.</p></div>`,
+                        lastReportStatusHtml
+                    );
+                    lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
                     return;
                 }
 
                 if (minRoll > maxRoll) {
                     elements.minRoll.classList.add('form-input-error');
                     elements.maxRoll.classList.add('form-input-error');
-                    html += `<div class="flex flex-col items-center justify-center p-8 text-error-light dark:text-error-dark border-2 border-dashed border-error-light/30 rounded-xl dark:border-error-dark/30"><p>Min Roll cannot be greater than Max Roll.</p></div></div>`;
-                    setOutputHtml(html);
+                    lastReportStatusHtml = setSectionHtml(
+                        reportStatusNode,
+                        `<div class="flex flex-col items-center justify-center p-8 text-error-light dark:text-error-dark border-2 border-dashed border-error-light/30 rounded-xl dark:border-error-dark/30"><p>Min Roll cannot be greater than Max Roll.</p></div>`,
+                        lastReportStatusHtml
+                    );
+                    lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
                     return;
                 }
                 
@@ -574,10 +680,16 @@
                     elements.errorMessage.textContent = buildValidationErrorMessage(validation);
                 }
                 if (!validation.valid && attendance.trim().length > 0) {
-                    html += `<div class="flex flex-col items-center justify-center p-8 opacity-50"><p>Fix validation errors to calculate stats.</p></div></div>`;
-                    setOutputHtml(html);
+                    lastReportStatusHtml = setSectionHtml(
+                        reportStatusNode,
+                        `<div class="flex flex-col items-center justify-center p-8 opacity-50"><p>Fix validation errors to calculate stats.</p></div>`,
+                        lastReportStatusHtml
+                    );
+                    lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
                     return;
                 }
+
+                lastReportStatusHtml = setSectionHtml(reportStatusNode, '', lastReportStatusHtml);
 
                 const { presentNumbers, absentNumbers, allNumbers } = getAttendanceStats(validation.numbers, attendanceInputMode);
                 const presentPct = allNumbers.length ? (presentNumbers.length / allNumbers.length * 100) : 0;
@@ -615,31 +727,30 @@
                 };
                 const presentPillsHtml = buildPillsHtml(presentRanges, 'present-pill', 'Present');
                 const absentPillsHtml = buildPillsHtml(absentRanges, 'absent-pill', 'Absent');
-                html += `
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
-                                <p class="stats-heading opacity-90">Present</p>
-                                <div class="flex items-baseline gap-2">
-                                    <p class="text-2xl font-bold text-success-light dark:text-success-dark">${presentNumbers.length}</p>
-                                    <span class="text-sm opacity-50">(${presentPct.toFixed(1)}%)</span>
-                                </div>
-                                ${createMeter(presentPct, 'bg-meter-present')}
+                const statsHtml = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
+                            <p class="stats-heading opacity-90">Present</p>
+                            <div class="flex items-baseline gap-2">
+                                <p class="text-2xl font-bold text-success-light dark:text-success-dark">${presentNumbers.length}</p>
+                                <span class="text-sm opacity-50">(${presentPct.toFixed(1)}%)</span>
                             </div>
-                            <div class="report-card p-4 stats-card border-error-light dark:border-error-dark">
-                                <p class="stats-heading opacity-90">Absent</p>
-                                <div class="flex items-baseline gap-2">
-                                    <p class="text-2xl font-bold text-error-light dark:text-error-dark">${absentNumbers.length}</p>
-                                    <span class="text-sm opacity-50">(${absentPct.toFixed(1)}%)</span>
-                                </div>
-                                ${createMeter(absentPct, 'bg-meter-absent')}
-                            </div>
+                            ${createMeter(presentPct, 'bg-meter-present')}
                         </div>
-
-                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p>${presentPillsHtml}</div>` : ''}
-                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p>${absentPillsHtml}</div>` : ''}
+                        <div class="report-card p-4 stats-card border-error-light dark:border-error-dark">
+                            <p class="stats-heading opacity-90">Absent</p>
+                            <div class="flex items-baseline gap-2">
+                                <p class="text-2xl font-bold text-error-light dark:text-error-dark">${absentNumbers.length}</p>
+                                <span class="text-sm opacity-50">(${absentPct.toFixed(1)}%)</span>
+                            </div>
+                            ${createMeter(absentPct, 'bg-meter-absent')}
+                        </div>
                     </div>
+
+                    ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p>${presentPillsHtml}</div>` : ''}
+                    ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p>${absentPillsHtml}</div>` : ''}
                 `;
-                setOutputHtml(html);
+                lastReportStatsHtml = setSectionHtml(reportStatsNode, statsHtml, lastReportStatsHtml);
             };
 
             const recordAndRender = (newState) => {
@@ -794,6 +905,15 @@
             if (!window.flatpickr && elements.datePickerEl) {
                 elements.datePickerEl.addEventListener('input', (event) => onDateChange(event.target.value));
             }
+            if (elements.datePickerEl) {
+                ['focus', 'pointerdown', 'touchstart'].forEach((eventName) => {
+                    elements.datePickerEl.addEventListener(eventName, () => {
+                        ensureFlatpickrLoaded().catch(() => {
+                            // Native date entry remains available if the enhancement fails.
+                        });
+                    }, { passive: true, once: true });
+                });
+            }
             const setDateByOffset = (offsetDays) => {
                 const target = new Date();
                 target.setDate(target.getDate() + offsetDays);
@@ -851,10 +971,7 @@
 
                     toggleClassTypeFields();
 
-                    elements.outputPanel.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-40">
-                        <p class="text-lg">Waiting for input...</p>
-                    </div>`;
-                    lastOutputHtml = elements.outputPanel.innerHTML;
+                    resetOutputPanel();
 
                     switchSection('section1');
 
