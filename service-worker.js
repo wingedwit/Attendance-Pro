@@ -3,6 +3,7 @@ const APP_VERSION = '1.0.1';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
+const RUNTIME_CACHE_MAX_ENTRIES = 40;
 
 const APP_SHELL = [
   './',
@@ -43,6 +44,14 @@ const OFFLINE_HTML = `<!doctype html>
 const shouldCacheResponse = (response) =>
   Boolean(response) && response.ok && response.type === 'basic';
 
+const trimRuntimeCache = async () => {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const keys = await cache.keys();
+  if (keys.length <= RUNTIME_CACHE_MAX_ENTRIES) return;
+  const deleteCount = keys.length - RUNTIME_CACHE_MAX_ENTRIES;
+  await Promise.all(keys.slice(0, deleteCount).map((request) => cache.delete(request)));
+};
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
@@ -75,7 +84,8 @@ self.addEventListener('fetch', (event) => {
         const fresh = await fetch(event.request);
         if (shouldCacheResponse(fresh)) {
           const runtime = await caches.open(RUNTIME_CACHE);
-          runtime.put(event.request, fresh.clone());
+          await runtime.put(event.request, fresh.clone());
+          await trimRuntimeCache();
         }
         return fresh;
       } catch (_) {
@@ -100,7 +110,8 @@ self.addEventListener('fetch', (event) => {
       const fresh = await fetch(event.request);
       if (shouldCacheResponse(fresh)) {
         const runtime = await caches.open(RUNTIME_CACHE);
-        runtime.put(event.request, fresh.clone());
+        await runtime.put(event.request, fresh.clone());
+        await trimRuntimeCache();
       }
       return fresh;
     } catch (_) {
