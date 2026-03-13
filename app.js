@@ -707,20 +707,20 @@
                 const absentRanges = groupNumbersIntoRangesCached(absentNumbers);
                 const buildPillsHtml = (ranges, pillClass, headingLabel) => {
                     if (!ranges.length) return '';
-                    const toPill = (range) => `<span class="${pillClass} inline-block text-xs font-bold px-2 py-1 rounded-md mr-1 mb-1 shadow-sm">${range}</span>`;
+                    const toPill = (range) => `<span class="${pillClass} attendance-pill shadow-sm">${range}</span>`;
 
                     if (ranges.length <= PILLS_INLINE_RENDER_LIMIT) {
-                        return `<div class="flex flex-wrap">${ranges.map(toPill).join('')}</div>`;
+                        return `<div class="attendance-pill-list">${ranges.map(toPill).join('')}</div>`;
                     }
 
                     const previewRanges = ranges.slice(0, PILLS_INLINE_RENDER_LIMIT);
                     const remaining = ranges.length - previewRanges.length;
                     return `
                         <div class="space-y-3">
-                            <div class="flex flex-wrap">${previewRanges.map(toPill).join('')}</div>
+                            <div class="attendance-pill-list">${previewRanges.map(toPill).join('')}</div>
                             <details class="rounded-lg border border-outline-light/20 dark:border-outline-dark/20 p-3">
                                 <summary class="cursor-pointer text-sm font-semibold">Show ${remaining} more ${escapeHtml(headingLabel.toLowerCase())} ranges</summary>
-                                <div class="flex flex-wrap mt-3">${ranges.slice(PILLS_INLINE_RENDER_LIMIT).map(toPill).join('')}</div>
+                                <div class="attendance-pill-list mt-3">${ranges.slice(PILLS_INLINE_RENDER_LIMIT).map(toPill).join('')}</div>
                             </details>
                         </div>
                     `;
@@ -728,27 +728,29 @@
                 const presentPillsHtml = buildPillsHtml(presentRanges, 'present-pill', 'Present');
                 const absentPillsHtml = buildPillsHtml(absentRanges, 'absent-pill', 'Absent');
                 const statsHtml = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
-                            <p class="stats-heading opacity-90">Present</p>
-                            <div class="flex items-baseline gap-2">
-                                <p class="text-2xl font-bold text-success-light dark:text-success-dark">${presentNumbers.length}</p>
-                                <span class="text-sm opacity-50">(${presentPct.toFixed(1)}%)</span>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="report-card p-4 stats-card border-success-light dark:border-success-dark">
+                                <p class="stats-heading opacity-90">Present</p>
+                                <div class="flex items-baseline gap-2">
+                                    <p class="text-2xl font-bold text-success-light dark:text-success-dark">${presentNumbers.length}</p>
+                                    <span class="text-sm opacity-50">(${presentPct.toFixed(1)}%)</span>
+                                </div>
+                                ${createMeter(presentPct, 'bg-meter-present')}
                             </div>
-                            ${createMeter(presentPct, 'bg-meter-present')}
-                        </div>
-                        <div class="report-card p-4 stats-card border-error-light dark:border-error-dark">
-                            <p class="stats-heading opacity-90">Absent</p>
-                            <div class="flex items-baseline gap-2">
-                                <p class="text-2xl font-bold text-error-light dark:text-error-dark">${absentNumbers.length}</p>
-                                <span class="text-sm opacity-50">(${absentPct.toFixed(1)}%)</span>
+                            <div class="report-card p-4 stats-card border-error-light dark:border-error-dark">
+                                <p class="stats-heading opacity-90">Absent</p>
+                                <div class="flex items-baseline gap-2">
+                                    <p class="text-2xl font-bold text-error-light dark:text-error-dark">${absentNumbers.length}</p>
+                                    <span class="text-sm opacity-50">(${absentPct.toFixed(1)}%)</span>
+                                </div>
+                                ${createMeter(absentPct, 'bg-meter-absent')}
                             </div>
-                            ${createMeter(absentPct, 'bg-meter-absent')}
                         </div>
-                    </div>
 
-                    ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p>${presentPillsHtml}</div>` : ''}
-                    ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p>${absentPillsHtml}</div>` : ''}
+                        ${presentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Present Rolls</p>${presentPillsHtml}</div>` : ''}
+                        ${absentNumbers.length > 0 ? `<div class="report-card p-5"><p class="text-sm font-bold uppercase tracking-wide opacity-90 mb-3">Absent Rolls</p>${absentPillsHtml}</div>` : ''}
+                    </div>
                 `;
                 lastReportStatsHtml = setSectionHtml(reportStatsNode, statsHtml, lastReportStatsHtml);
             };
