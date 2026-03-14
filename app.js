@@ -127,6 +127,10 @@
             let lastReportMetaHtml = '';
             let lastReportStatusHtml = '';
             let lastReportStatsHtml = '';
+            let lastRenderedStatsNumbersRef = null;
+            let lastRenderedStatsMode = '';
+            let lastRenderedStatsMin = NaN;
+            let lastRenderedStatsMax = NaN;
             const fastInputTimers = new Map();
             const groupedRangesCache = new WeakMap();
             let rollCountTimer = null;
@@ -603,6 +607,13 @@
                 return nextHtml;
             };
 
+            const invalidateRenderedStatsCache = () => {
+                lastRenderedStatsNumbersRef = null;
+                lastRenderedStatsMode = '';
+                lastRenderedStatsMin = NaN;
+                lastRenderedStatsMax = NaN;
+            };
+
             const resetOutputPanel = () => {
                 reportMetaNode = null;
                 reportStatusNode = null;
@@ -610,6 +621,7 @@
                 lastReportMetaHtml = '';
                 lastReportStatusHtml = '';
                 lastReportStatsHtml = '';
+                invalidateRenderedStatsCache();
                 elements.outputPanel.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-40">
                     <p class="text-lg">Waiting for input...</p>
                 </div>`;
@@ -654,6 +666,7 @@
                         lastReportStatusHtml
                     );
                     lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
+                    invalidateRenderedStatsCache();
                     return;
                 }
 
@@ -666,6 +679,7 @@
                         lastReportStatusHtml
                     );
                     lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
+                    invalidateRenderedStatsCache();
                     return;
                 }
                 
@@ -686,10 +700,19 @@
                         lastReportStatusHtml
                     );
                     lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
+                    invalidateRenderedStatsCache();
                     return;
                 }
 
                 lastReportStatusHtml = setSectionHtml(reportStatusNode, '', lastReportStatusHtml);
+
+                const shouldRebuildStatsSection =
+                    lastRenderedStatsNumbersRef !== validation.numbers ||
+                    lastRenderedStatsMode !== attendanceInputMode ||
+                    lastRenderedStatsMin !== minRoll ||
+                    lastRenderedStatsMax !== maxRoll;
+
+                if (!shouldRebuildStatsSection) return;
 
                 const { presentNumbers, absentNumbers, allNumbers } = getAttendanceStats(validation.numbers, attendanceInputMode);
                 const presentPct = allNumbers.length ? (presentNumbers.length / allNumbers.length * 100) : 0;
@@ -753,6 +776,10 @@
                     </div>
                 `;
                 lastReportStatsHtml = setSectionHtml(reportStatsNode, statsHtml, lastReportStatsHtml);
+                lastRenderedStatsNumbersRef = validation.numbers;
+                lastRenderedStatsMode = attendanceInputMode;
+                lastRenderedStatsMin = minRoll;
+                lastRenderedStatsMax = maxRoll;
             };
 
             const recordAndRender = (newState) => {
@@ -1075,10 +1102,6 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 if (!elements.downloadMenu.contains(event.target)) closeDownloadMenu();
             });
 
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") closeDownloadMenu();
-            });
-
             document.querySelectorAll('.nav-section-btn').forEach(btn => {
                 btn.addEventListener('click', () => switchSection(btn.dataset.target));
             });
@@ -1087,6 +1110,18 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             document.addEventListener('keydown', (event) => {
+                if (
+                    event.key === 'Backspace' &&
+                    event.ctrlKey &&
+                    !event.shiftKey &&
+                    !event.altKey &&
+                    !event.metaKey
+                ) {
+                    event.preventDefault();
+                    resetForm();
+                    return;
+                }
+
                 if (!event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return;
                 if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
 
