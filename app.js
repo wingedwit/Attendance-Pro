@@ -531,14 +531,41 @@
                     allNumbersCacheMax = max;
                 }
                 const allNumbers = allNumbersCache;
-                const inputNumbersSet = new Set(inputNumbers);
                 let presentNumbers, absentNumbers;
-                if (inputMode === 'absent') {
-                    absentNumbers = [...inputNumbers].sort((a,b)=>a-b);
-                    presentNumbers = allNumbers.filter(n => !inputNumbersSet.has(n));
+
+                // `inputNumbers` comes from validation and is already unique + sorted.
+                // Reuse it directly to avoid cloning/sorting on every render.
+                if (inputNumbers.length === 0) {
+                    if (inputMode === 'absent') {
+                        absentNumbers = inputNumbers;
+                        presentNumbers = allNumbers;
+                    } else {
+                        presentNumbers = inputNumbers;
+                        absentNumbers = allNumbers;
+                    }
+                } else if (inputNumbers.length === allNumbers.length) {
+                    if (inputMode === 'absent') {
+                        absentNumbers = inputNumbers;
+                        presentNumbers = [];
+                    } else {
+                        presentNumbers = inputNumbers;
+                        absentNumbers = [];
+                    }
                 } else {
-                    presentNumbers = [...inputNumbers].sort((a,b)=>a-b);
-                    absentNumbers = allNumbers.filter(n => !inputNumbersSet.has(n));
+                    const inputNumbersSet = new Set(inputNumbers);
+                    const complement = [];
+                    for (let i = 0; i < allNumbers.length; i++) {
+                        const roll = allNumbers[i];
+                        if (!inputNumbersSet.has(roll)) complement.push(roll);
+                    }
+
+                    if (inputMode === 'absent') {
+                        absentNumbers = inputNumbers;
+                        presentNumbers = complement;
+                    } else {
+                        presentNumbers = inputNumbers;
+                        absentNumbers = complement;
+                    }
                 }
                 const result = { presentNumbers, absentNumbers, allNumbers };
                 statsCacheInputRef = inputNumbers;
