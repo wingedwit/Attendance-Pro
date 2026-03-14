@@ -665,18 +665,122 @@
             #outputPanel {
                 padding: 1.25rem;
             }
+            #liveReportHeader {
+                padding: 1rem 1.25rem;
+            }
         }
 
         @media (max-width: 1024px) {
             .app-shell {
                 flex-direction: column;
+                padding: 0.9rem;
+                gap: 0.9rem;
             }
             .panel-shell {
                 width: 100% !important;
+                border-radius: 1.35rem;
             }
             aside,
             main {
                 height: auto !important;
+            }
+            main {
+                min-height: 46vh;
+            }
+            header {
+                padding: 1rem 1.1rem !important;
+            }
+            nav {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            .nav-section-btn {
+                padding-top: 0.9rem !important;
+                padding-bottom: 0.9rem !important;
+                font-size: 0.78rem;
+                letter-spacing: 0.06em;
+            }
+            #inputContainer {
+                padding: 1rem !important;
+            }
+            #outputPanel {
+                padding: 1rem !important;
+            }
+            #outputPanel .grid.grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .section-footer {
+                padding-top: 1.25rem;
+            }
+            .section-footer .action-btn {
+                padding: 0.72rem 1rem !important;
+                font-size: 1rem !important;
+            }
+            .shortcut-tooltip {
+                left: auto;
+                right: 0;
+                transform: translateY(6px);
+            }
+            .shortcut-help:hover .shortcut-tooltip,
+            .shortcut-help:focus-within .shortcut-tooltip {
+                transform: translateY(0);
+            }
+        }
+
+        @media (min-width: 700px) and (max-width: 900px) and (orientation: portrait) {
+            .app-shell {
+                padding: 0.85rem;
+                gap: 0.85rem;
+            }
+
+            aside.panel-shell {
+                min-height: 56dvh;
+            }
+
+            main.panel-shell {
+                min-height: 40dvh;
+            }
+
+            #inputContainer {
+                padding: 0.95rem !important;
+            }
+
+            #outputPanel {
+                padding: 0.95rem !important;
+            }
+
+            .section-footer {
+                padding-top: 1rem;
+            }
+
+            .section-footer .action-btn {
+                padding: 0.68rem 0.95rem !important;
+                font-size: 0.94rem !important;
+            }
+
+            .count-display {
+                font-size: 0.95rem !important;
+                padding: 0.68rem 0.95rem !important;
+            }
+
+            #section3 .absolute.bottom-4.right-4 {
+                bottom: 0.7rem;
+                right: 0.7rem;
+                gap: 0.45rem;
+            }
+
+            #section3 .absolute.bottom-4.right-4 .action-btn {
+                padding: 0.58rem 0.72rem !important;
+                font-size: 0.78rem !important;
+            }
+
+            #attendanceInput {
+                min-height: 11rem;
+            }
+
+            .developer-credit {
+                gap: 0.75rem;
+                font-size: 0.82rem;
             }
         }
 
@@ -686,14 +790,55 @@
                 line-height: 1.5rem;
             }
 
+            .app-shell {
+                padding: 0.6rem;
+                gap: 0.6rem;
+            }
+
+            .panel-shell {
+                border-radius: 1.1rem;
+            }
+
             #section1 .grid,
             #section2 .grid,
             .grid.grid-cols-2 {
                 grid-template-columns: 1fr;
             }
 
+            #section3 .absolute.bottom-4.right-4 {
+                position: static;
+                margin-top: 0.75rem;
+                justify-content: flex-end;
+            }
+
+            #attendanceInput {
+                min-height: 12.5rem;
+            }
+
+            .section-footer {
+                flex-wrap: wrap;
+                gap: 0.7rem;
+            }
+
+            .section-footer .action-btn,
+            .section-footer .count-display {
+                width: 100%;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .section-footer .action-btn {
+                font-size: 0.96rem !important;
+            }
+
             .developer-credit {
                 flex-wrap: wrap;
                 gap: 0.6rem;
+                text-align: center;
+            }
+
+            .shortcut-tooltip {
+                min-width: 220px;
+                max-width: min(88vw, 300px);
             }
         }
