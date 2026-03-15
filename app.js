@@ -1131,16 +1131,14 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             const copyReportData = (trigger = 'menu') => {
                 const text = buildReportCopyText();
                 if (!text) return;
-                const label = trigger === 'shortcut' ? 'G-Doc Data | Ctrl+Alt+D' : 'G-Doc Data';
-                copyText(text, "Copied", label);
+                copyText(text, "Copied", "G-Doc Data");
                 closeDownloadMenu();
             };
 
             const copySheetData = (trigger = 'menu') => {
                 const text = buildSheetCopyText();
                 if (!text) return;
-                const label = trigger === 'shortcut' ? 'G-Sheet Data | Ctrl+Alt+S' : 'G-Sheet Data';
-                copyText(text, "Copied", label);
+                copyText(text, "Copied", "G-Sheet Data");
                 closeDownloadMenu();
             };
 

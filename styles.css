@@ -380,7 +380,12 @@
             font-size: 0.875rem;
         }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
-        #toast.error { background-color: var(--error-container-light); color: var(--on-error-container-light); }
+        #toast.error {
+            background-color: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #ef4444;
+            box-shadow: 0 10px 24px rgba(127, 29, 29, 0.18);
+        }
         .dark #toast.error {
             background-color: #7f1d1d;
             color: #fee2e2;
