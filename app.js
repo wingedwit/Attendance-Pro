@@ -137,6 +137,7 @@
             let pendingRollCountInput = '';
             let flatpickrLoadPromise = null;
             let flatpickrInstance = null;
+            let toastTimer = null;
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -353,7 +354,11 @@
                 elements.toast.textContent = message;
                 elements.toast.classList.toggle("error", isError);
                 elements.toast.classList.add("show");
-                setTimeout(() => { elements.toast.classList.remove("show"); }, 3000);
+                if (toastTimer) clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toastTimer = null;
+                    elements.toast.classList.remove("show");
+                }, 3000);
             };
 
             const copyText = (text, successMessage, copiedLabel = "") => {
@@ -1107,6 +1112,22 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 elements.downloadButton.setAttribute('aria-expanded', 'false');
             };
 
+            const copyReportData = (trigger = 'menu') => {
+                const text = buildReportCopyText();
+                if (!text) return;
+                const label = trigger === 'shortcut' ? 'G-Doc Data | Ctrl+Alt+D' : 'G-Doc Data';
+                copyText(text, "Copied", label);
+                closeDownloadMenu();
+            };
+
+            const copySheetData = (trigger = 'menu') => {
+                const text = buildSheetCopyText();
+                if (!text) return;
+                const label = trigger === 'shortcut' ? 'G-Sheet Data | Ctrl+Alt+S' : 'G-Sheet Data';
+                copyText(text, "Copied", label);
+                closeDownloadMenu();
+            };
+
             elements.downloadButton.addEventListener("click", (event) => {
                 event.stopPropagation();
                 const isOpen = elements.downloadMenu.classList.toggle('open');
@@ -1114,15 +1135,11 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             elements.downloadOptionReport.addEventListener("click", () => {
-                const text = buildReportCopyText();
-                if (text) copyText(text, "Copied", "G-Doc Data");
-                closeDownloadMenu();
+                copyReportData('menu');
             });
 
             elements.downloadOptionSheet.addEventListener("click", () => {
-                const text = buildSheetCopyText();
-                if (text) copyText(text, "Copied", "G-Sheet Data");
-                closeDownloadMenu();
+                copySheetData('menu');
             });
 
             document.addEventListener("click", (event) => {
@@ -1137,6 +1154,19 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             document.addEventListener('keydown', (event) => {
+                if (
+                    event.ctrlKey &&
+                    event.altKey &&
+                    !event.shiftKey &&
+                    !event.metaKey &&
+                    (event.code === 'KeyD' || event.code === 'KeyS')
+                ) {
+                    event.preventDefault();
+                    if (event.code === 'KeyD') copyReportData('shortcut');
+                    if (event.code === 'KeyS') copySheetData('shortcut');
+                    return;
+                }
+
                 if (
                     event.key === 'Backspace' &&
                     event.ctrlKey &&
