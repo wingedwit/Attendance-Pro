@@ -369,11 +369,27 @@
                     textArea.style.position = "fixed"; textArea.style.left = "-9999px";
                     document.body.appendChild(textArea);
                     textArea.focus(); textArea.select();
-                    try { document.execCommand('copy'); showToast(toastMessage); } 
-                    catch (err) { showToast("Copy failed", true); }
-                    document.body.removeChild(textArea);
+                    try {
+                        document.execCommand('copy');
+                        showToast(toastMessage);
+                        document.body.removeChild(textArea);
+                        return Promise.resolve(true);
+                    }
+                    catch (err) {
+                        showToast("Copy failed", true);
+                        document.body.removeChild(textArea);
+                        return Promise.resolve(false);
+                    }
                 } else {
-                    navigator.clipboard.writeText(text).then(() => showToast(toastMessage), () => showToast("Copy failed", true));
+                    return navigator.clipboard.writeText(text)
+                        .then(() => {
+                            showToast(toastMessage);
+                            return true;
+                        })
+                        .catch(() => {
+                            showToast("Copy failed", true);
+                            return false;
+                        });
                 }
             };
 
@@ -1154,16 +1170,19 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             document.addEventListener('keydown', (event) => {
+                const key = String(event.key || '').toLowerCase();
+                const isDocShortcut = event.ctrlKey && event.altKey && !event.shiftKey && !event.metaKey &&
+                    (event.code === 'KeyD' || key === 'd');
+                const isSheetShortcut = event.ctrlKey && event.altKey && !event.shiftKey && !event.metaKey &&
+                    (event.code === 'KeyS' || key === 's');
+
                 if (
-                    event.ctrlKey &&
-                    event.altKey &&
-                    !event.shiftKey &&
-                    !event.metaKey &&
-                    (event.code === 'KeyD' || event.code === 'KeyS')
+                    !event.repeat &&
+                    (isDocShortcut || isSheetShortcut)
                 ) {
                     event.preventDefault();
-                    if (event.code === 'KeyD') copyReportData('shortcut');
-                    if (event.code === 'KeyS') copySheetData('shortcut');
+                    if (isDocShortcut) copyReportData('shortcut');
+                    if (isSheetShortcut) copySheetData('shortcut');
                     return;
                 }
 
@@ -1197,7 +1216,7 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 const firstFocusable = section && Array.from(section.querySelectorAll('input, select, textarea, button'))
                     .find(el => !el.disabled && el.offsetParent);
                 if (firstFocusable) firstFocusable.focus();
-            });
+            }, true);
 
             let initialState = loadFromStorage();
             undoStack.push(JSON.stringify(initialState));
