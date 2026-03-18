@@ -98,7 +98,7 @@
             let redoStack = [];
             let saveTimeout = null;
             let persistTimer = null;
-            let persistPendingJson = null;
+            let persistPendingState = null;
             let reportMetaNode = null;
             let reportStatusNode = null;
             let reportStatsNode = null;
@@ -138,9 +138,13 @@
             };
 
             const persistStateNow = () => {
-                if (!persistPendingJson) return;
-                const didPersist = safeStorage.set(STORAGE_KEY, persistPendingJson);
-                persistPendingJson = null;
+                if (!persistPendingState) return;
+                const payload = JSON.stringify({
+                    version: STORAGE_VERSION,
+                    data: persistPendingState
+                });
+                const didPersist = safeStorage.set(STORAGE_KEY, payload);
+                persistPendingState = null;
                 if (!didPersist) return;
                 elements.savedIndicator.classList.add('show');
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -174,10 +178,7 @@
             };
 
             const saveToStorage = () => {
-                persistPendingJson = JSON.stringify({
-                    version: STORAGE_VERSION,
-                    data: state
-                });
+                persistPendingState = state;
                 if (persistTimer) clearTimeout(persistTimer);
                 persistTimer = setTimeout(() => {
                     persistTimer = null;
@@ -320,8 +321,10 @@
             const buildValidationErrorMessage = (validation) => attendanceEngine.buildValidationErrorMessage(validation);
             const getAttendanceStats = (inputNumbers, inputMode) => attendanceEngine.getAttendanceStats(inputNumbers, inputMode);
 
+            const attendanceModeButtons = Array.from(elements.attendanceModeToggle.querySelectorAll('button'));
+            const presentModeButton = elements.attendanceModeToggle.querySelector('[data-mode="present"]');
             const updateAttendanceModeUI = (mode) => {
-                elements.attendanceModeToggle.querySelectorAll('button').forEach(btn => {
+                attendanceModeButtons.forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.mode === mode);
                 });
             };
@@ -747,7 +750,7 @@
                         clearTimeout(persistTimer);
                         persistTimer = null;
                     }
-                    persistPendingJson = null;
+                    persistPendingState = null;
                     safeStorage.remove(STORAGE_KEY);
                     const clearedState = getInitialState();
 
@@ -766,8 +769,8 @@
                     elements.errorMessage.textContent = '';
                     elements.rollCount.textContent = '0';
 
-                    elements.attendanceModeToggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-                    elements.attendanceModeToggle.querySelector('[data-mode="present"]').classList.add('active');
+                    attendanceModeButtons.forEach(btn => btn.classList.remove('active'));
+                    if (presentModeButton) presentModeButton.classList.add('active');
 
                     toggleClassTypeFields();
 
