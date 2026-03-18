@@ -1,3 +1,13 @@
+        const {
+            parseDDMMYYYY,
+            formatTimeForReport,
+            getFormattedDateWithDay,
+            getDurationInHours,
+            getDurationString
+        } = window.AttendanceDateUtils;
+        const { safeStorage, loadStateFromStorage } = window.AttendanceStorageUtils;
+        const { createAttendanceEngine, groupNumbersIntoRanges } = window.AttendanceLogic;
+
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;
@@ -7,28 +17,6 @@
         const MAX_UNDO_HISTORY = 200;
         const PILLS_INLINE_RENDER_LIMIT = 80;
         const FLATPICKR_SCRIPT_SRC = './assets/vendor/flatpickr/flatpickr.min.js';
-        const safeStorage = {
-            get(key) {
-                try { return localStorage.getItem(key); }
-                catch (e) { return null; }
-            },
-            set(key, value) {
-                try {
-                    localStorage.setItem(key, value);
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            },
-            remove(key) {
-                try {
-                    localStorage.removeItem(key);
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            }
-        };
         let cachedSectionNodes = null;
         let cachedNavButtons = null;
 
@@ -111,16 +99,6 @@
             let saveTimeout = null;
             let persistTimer = null;
             let persistPendingJson = null;
-            let validationCacheKey = '';
-            let validationCacheValue = null;
-            let statsCacheInputRef = null;
-            let statsCacheMode = '';
-            let statsCacheMin = NaN;
-            let statsCacheMax = NaN;
-            let statsCacheResult = null;
-            let allNumbersCacheMin = NaN;
-            let allNumbersCacheMax = NaN;
-            let allNumbersCache = [];
             let reportMetaNode = null;
             let reportStatusNode = null;
             let reportStatsNode = null;
@@ -155,88 +133,8 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
 
-            const parseDDMMYYYY = (rawValue) => {
-                const value = String(rawValue || '').trim();
-                const match = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-                if (!match) return null;
-                const [, day, month, year] = match;
-                const parsed = new Date(Number(year), Number(month) - 1, Number(day));
-                if (Number.isNaN(parsed.getTime())) return null;
-                if (
-                    parsed.getDate() !== Number(day) ||
-                    parsed.getMonth() !== Number(month) - 1 ||
-                    parsed.getFullYear() !== Number(year)
-                ) {
-                    return null;
-                }
-                return parsed;
-            };
-
-            const normalizeStatePayload = (savedPayload) => {
-                if (!savedPayload || typeof savedPayload !== 'object') return getInitialState();
-
-                // Backward compatible: older versions stored state directly.
-                const isWrappedPayload = Object.prototype.hasOwnProperty.call(savedPayload, 'version') &&
-                    Object.prototype.hasOwnProperty.call(savedPayload, 'data');
-                const rawState = isWrappedPayload ? savedPayload.data : savedPayload;
-                const merged = { ...getInitialState(), ...(rawState || {}) };
-
-                return {
-                    ...merged,
-                    startTime: normalizeTimeTo24h(merged.startTime),
-                    endTime: normalizeTimeTo24h(merged.endTime)
-                };
-            };
-
-            const normalizeTimeTo24h = (rawValue) => {
-                const value = String(rawValue || '').trim();
-                if (!value) return '';
-
-                const match24h = value.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-                if (match24h) {
-                    return `${String(Number(match24h[1])).padStart(2, '0')}:${match24h[2]}`;
-                }
-
-                const match12h = value.match(/^(\d{1,2}):([0-5]\d)\s*(AM|PM)$/i);
-                if (!match12h) return '';
-
-                let hours = Number(match12h[1]);
-                const minutes = match12h[2];
-                const period = match12h[3].toUpperCase();
-                if (period === 'PM' && hours !== 12) hours += 12;
-                if (period === 'AM' && hours === 12) hours = 0;
-                return `${String(hours).padStart(2, '0')}:${minutes}`;
-            };
-
-            const formatTimeForReport = (rawValue) => {
-                const value = String(rawValue || '').trim();
-                if (!value) return '';
-
-                const match24h = value.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-                if (match24h) {
-                    const hours24 = Number(match24h[1]);
-                    const minutes = match24h[2];
-                    const period = hours24 >= 12 ? 'PM' : 'AM';
-                    const hours12 = hours24 % 12 || 12;
-                    return `${hours12}:${minutes} ${period}`;
-                }
-
-                const match12h = value.match(/^(\d{1,2}):([0-5]\d)\s*(AM|PM)$/i);
-                if (match12h) {
-                    return `${Number(match12h[1])}:${match12h[2]} ${match12h[3].toUpperCase()}`;
-                }
-
-                return value;
-            };
-
             const loadFromStorage = () => {
-                const saved = safeStorage.get(STORAGE_KEY);
-                if (!saved) return getInitialState();
-                try {
-                    const parsed = JSON.parse(saved);
-                    return normalizeStatePayload(parsed);
-                }
-                catch (e) { return getInitialState(); }
+                return loadStateFromStorage(STORAGE_KEY, getInitialState);
             };
 
             const persistStateNow = () => {
@@ -400,20 +298,6 @@
                 elements.mobileCopyButton.addEventListener("click", () => copyText("+919468937372", "Copied", "Mobile Number"));
             }
 
-            const groupNumbersIntoRanges = (numbers) => {
-                if (!numbers || numbers.length === 0) return [];
-                const ranges = [];
-                let start = numbers[0], end = numbers[0];
-                for (let i = 1; i < numbers.length; i++) {
-                    if (numbers[i] === end + 1) { end = numbers[i]; } else {
-                        ranges.push(start === end ? `${start}` : `${start}-${end}`);
-                        start = numbers[i]; end = numbers[i];
-                    }
-                }
-                ranges.push(start === end ? `${start}` : `${start}-${end}`);
-                return ranges;
-            };
-
             const groupNumbersIntoRangesCached = (numbers) => {
                 if (!numbers || numbers.length === 0) return [];
                 const cached = groupedRangesCache.get(numbers);
@@ -423,179 +307,18 @@
                 return computed;
             };
 
-            const getFormattedDateWithDay = (dateString) => {
-                if (!dateString || typeof dateString !== 'string') return 'N/A';
-                const parts = dateString.split('-');
-                if (parts.length !== 3) return dateString;
-                try {
-                    const dateObj = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
-                    if (isNaN(dateObj.getTime())) return dateString;
-                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-                    return `${dateString} (${dayName})`;
-                } catch (e) { return dateString; }
-            };
-
-            const getDurationInHours = () => {
-                if (!state.startTime || !state.endTime || !state.startTime.includes(':') || !state.endTime.includes(':')) return 0;
-                try {
-                    const timePattern = /(\d{1,2}):(\d{2})\s*(AM|PM)?/i;
-                    const startMatch = state.startTime.match(timePattern), endMatch = state.endTime.match(timePattern);
-                    if (!startMatch || !endMatch) return 0;
-                    let h1 = parseInt(startMatch[1]), m1 = parseInt(startMatch[2]), p1 = startMatch[3]?.toUpperCase();
-                    let h2 = parseInt(endMatch[1]), m2 = parseInt(endMatch[2]), p2 = endMatch[3]?.toUpperCase();
-                    if (p1 === 'PM' && h1 !== 12) h1 += 12; else if (p1 === 'AM' && h1 === 12) h1 = 0;
-                    if (p2 === 'PM' && h2 !== 12) h2 += 12; else if (p2 === 'AM' && h2 === 12) h2 = 0;
-                    const t1 = new Date(0,0,0,h1,m1), t2 = new Date(0,0,0,h2,m2);
-                    return t2 <= t1 ? 0 : (t2 - t1) / 36e5;
-                } catch (e) { return 0; }
-            };
-
-            const getDurationString = () => {
-                const totalHours = getDurationInHours();
-                if (totalHours === 0) return "";
-                const h = Math.floor(totalHours), m = Math.round((totalHours - h) * 60);
-                return `${h > 0 ? `${h}h ` : ''}${m > 0 ? `${m}m` : ''}`.trim();
-            };
+            const getStateDurationInHours = () => getDurationInHours(state.startTime, state.endTime);
+            const getStateDurationString = () => getDurationString(state.startTime, state.endTime);
 
             const getRollRanges = () => [
                 state.minRoll === '' ? NaN : parseInt(state.minRoll || '', 10),
                 state.maxRoll === '' ? NaN : parseInt(state.maxRoll || '', 10)
             ];
 
-            const validateRollNumbers = (input) => {
-                const rawTokens = input.trim().split(/[,\s\n]+/).filter(Boolean);
-                if (rawTokens.length === 0) return { valid: true, numbers: [], duplicates: [], errors: { nonNumeric: [], outOfRange: [], invalidRange: [] } };
-                const seen = new Map();
-                const numbers = [], duplicates = [], nonNumeric = [], outOfRange = [], invalidRange = [];
-                const [min, max] = getRollRanges();
-
-                rawTokens.forEach(token => {
-                    if (token.includes('-')) {
-                        const [startStr, endStr] = token.split('-');
-                        const start = Number(startStr.trim()), end = Number(endStr.trim());
-                        if (isNaN(start) || isNaN(end) || start > end) { invalidRange.push(token); return; }
-                        for (let i = start; i <= end; i++) {
-                            if (seen.has(i)) duplicates.push(i);
-                            seen.set(i, (seen.get(i) || 0) + 1);
-                            if (i >= min && i <= max) numbers.push(i); else outOfRange.push(i);
-                        }
-                    } else {
-                        const num = Number(token);
-                        if (isNaN(num)) { nonNumeric.push(token); return; }
-                        if (seen.has(num)) duplicates.push(num);
-                        seen.set(num, (seen.get(num) || 0) + 1);
-                        if (num < min || num > max) outOfRange.push(num);
-                        else numbers.push(num);
-                    }
-                });
-
-                const uniqueDuplicates = [...new Set(duplicates)];
-
-                return {
-                    valid: nonNumeric.length === 0 && outOfRange.length === 0 && invalidRange.length === 0 && uniqueDuplicates.length === 0,
-                    numbers: [...new Set(numbers)].sort((a, b) => a - b),
-                    duplicates: uniqueDuplicates,
-                    errors: { nonNumeric, outOfRange, invalidRange }
-                };
-            };
-
-            const getValidationResult = (inputText) => {
-                const input = String(inputText || '');
-                const [min, max] = getRollRanges();
-                const cacheKey = `${min}|${max}|${input}`;
-                if (validationCacheKey === cacheKey && validationCacheValue) return validationCacheValue;
-                const result = validateRollNumbers(input);
-                validationCacheKey = cacheKey;
-                validationCacheValue = result;
-                return result;
-            };
-
-            const buildValidationErrorMessage = (validation) => {
-                if (!validation || validation.valid) return '';
-                const summarize = (label, values) => {
-                    const list = Array.isArray(values) ? values : [];
-                    const deduped = [...new Set(list.map((item) => String(item).trim()).filter(Boolean))];
-                    if (deduped.length === 0) return '';
-                    const previewLimit = 12;
-                    const preview = deduped.slice(0, previewLimit).join(', ');
-                    const extra = deduped.length > previewLimit ? `, +${deduped.length - previewLimit} more` : '';
-                    return `${label} (${deduped.length}): ${preview}${extra}`;
-                };
-
-                const parts = [
-                    summarize('Duplicates', validation.duplicates),
-                    summarize('Non-numeric', validation.errors?.nonNumeric),
-                    summarize('Out of range', validation.errors?.outOfRange),
-                    summarize('Invalid ranges', validation.errors?.invalidRange)
-                ].filter(Boolean);
-
-                return parts.join(' | ');
-            };
-
-            const getAttendanceStats = (inputNumbers, inputMode) => {
-                const [min, max] = getRollRanges();
-
-                if (
-                    statsCacheInputRef === inputNumbers &&
-                    statsCacheMode === inputMode &&
-                    statsCacheMin === min &&
-                    statsCacheMax === max &&
-                    statsCacheResult
-                ) {
-                    return statsCacheResult;
-                }
-
-                if (isNaN(min) || isNaN(max) || min > max) return { presentNumbers: [], absentNumbers: [], allNumbers: [] };
-                if (allNumbersCacheMin !== min || allNumbersCacheMax !== max) {
-                    allNumbersCache = Array.from({ length: max - min + 1 }, (_, i) => i + min);
-                    allNumbersCacheMin = min;
-                    allNumbersCacheMax = max;
-                }
-                const allNumbers = allNumbersCache;
-                let presentNumbers, absentNumbers;
-
-                // `inputNumbers` comes from validation and is already unique + sorted.
-                // Reuse it directly to avoid cloning/sorting on every render.
-                if (inputNumbers.length === 0) {
-                    if (inputMode === 'absent') {
-                        absentNumbers = inputNumbers;
-                        presentNumbers = allNumbers;
-                    } else {
-                        presentNumbers = inputNumbers;
-                        absentNumbers = allNumbers;
-                    }
-                } else if (inputNumbers.length === allNumbers.length) {
-                    if (inputMode === 'absent') {
-                        absentNumbers = inputNumbers;
-                        presentNumbers = [];
-                    } else {
-                        presentNumbers = inputNumbers;
-                        absentNumbers = [];
-                    }
-                } else {
-                    const inputNumbersSet = new Set(inputNumbers);
-                    const complement = [];
-                    for (let i = 0; i < allNumbers.length; i++) {
-                        const roll = allNumbers[i];
-                        if (!inputNumbersSet.has(roll)) complement.push(roll);
-                    }
-
-                    if (inputMode === 'absent') {
-                        absentNumbers = inputNumbers;
-                        presentNumbers = complement;
-                    } else {
-                        presentNumbers = inputNumbers;
-                        absentNumbers = complement;
-                    }
-                }
-                const result = { presentNumbers, absentNumbers, allNumbers };
-                statsCacheInputRef = inputNumbers;
-                statsCacheMode = inputMode;
-                statsCacheMin = min;
-                statsCacheMax = max;
-                statsCacheResult = result;
-                return result;
-            };
+            const attendanceEngine = createAttendanceEngine(getRollRanges);
+            const getValidationResult = (inputText) => attendanceEngine.getValidationResult(inputText);
+            const buildValidationErrorMessage = (validation) => attendanceEngine.buildValidationErrorMessage(validation);
+            const getAttendanceStats = (inputNumbers, inputMode) => attendanceEngine.getAttendanceStats(inputNumbers, inputMode);
 
             const updateAttendanceModeUI = (mode) => {
                 elements.attendanceModeToggle.querySelectorAll('button').forEach(btn => {
@@ -681,7 +404,7 @@
                 updateRollCount(attendance);
                 ensureOutputStructure();
 
-                const duration = getDurationString();
+                const duration = getStateDurationString();
                 const formattedStartTime = formatTimeForReport(state.startTime);
                 const formattedEndTime = formatTimeForReport(state.endTime);
                 const liveReportTimeLine = (formattedStartTime && formattedEndTime)
@@ -1066,7 +789,7 @@
                 }
                 
                 const { presentNumbers, absentNumbers, allNumbers } = getAttendanceStats(validation.numbers, state.attendanceInputMode);
-                const duration = getDurationString();
+                const duration = getStateDurationString();
                 const total = allNumbers.length;
                 const pPct = total ? ((presentNumbers.length / total) * 100).toFixed(1) : "0.0";
                 const aPct = total ? ((absentNumbers.length / total) * 100).toFixed(1) : "0.0";
@@ -1114,7 +837,7 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
 
                 const { presentNumbers } = getAttendanceStats(validation.numbers, state.attendanceInputMode);
                 const presentSet = new Set(presentNumbers);
-                const durationVal = getDurationInHours() || 1;
+                const durationVal = getStateDurationInHours() || 1;
 
                 const rows = [];
                 for(let i = min; i <= max; i++) {
