@@ -320,41 +320,6 @@
             const getValidationResult = (inputText) => attendanceEngine.getValidationResult(inputText);
             const buildValidationErrorMessage = (validation) => attendanceEngine.buildValidationErrorMessage(validation);
             const getAttendanceStats = (inputNumbers, inputMode) => attendanceEngine.getAttendanceStats(inputNumbers, inputMode);
-            const analytics = (() => {
-                const ATTENDANCE_TRACK_THROTTLE_MS = 30000;
-                let lastAttendanceTrackedAt = 0;
-                const config = window.APP_ANALYTICS_CONFIG || {};
-
-                const canTrack = () =>
-                    Boolean(config.enabled) &&
-                    Boolean(config.apiKey) &&
-                    window.posthog &&
-                    typeof window.posthog.capture === 'function';
-
-                const track = (eventName, props = {}) => {
-                    if (!canTrack()) return;
-                    try {
-                        window.posthog.capture(eventName, props);
-                    } catch (e) {
-                        // Ignore analytics errors to keep core UX stable.
-                    }
-                };
-
-                const trackAttendanceUpdated = (attendanceValue) => {
-                    const now = Date.now();
-                    if ((now - lastAttendanceTrackedAt) < ATTENDANCE_TRACK_THROTTLE_MS) return;
-                    lastAttendanceTrackedAt = now;
-
-                    const validation = getValidationResult(attendanceValue || '');
-                    track('attendance_updated', {
-                        roll_count: validation.numbers.length,
-                        input_mode: state.attendanceInputMode || 'present',
-                        valid_input: validation.valid
-                    });
-                };
-
-                return { track, trackAttendanceUpdated };
-            })();
 
             const attendanceModeButtons = Array.from(elements.attendanceModeToggle.querySelectorAll('button'));
             const presentModeButton = elements.attendanceModeToggle.querySelector('[data-mode="present"]');
@@ -651,10 +616,7 @@
                 scheduleRollCountUpdate(value);
 
                 if (debounceTimer) clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    setState({ attendance: value });
-                    analytics.trackAttendanceUpdated(value);
-                }, DEBOUNCE_DELAY);
+                debounceTimer = setTimeout(() => setState({ attendance: value }), DEBOUNCE_DELAY);
             });
 
             elements.clearRollsButton.addEventListener('click', () => {
@@ -665,7 +627,6 @@
                 elements.errorMessage.textContent = '';
                 elements.attendanceInput.classList.remove('form-input-valid', 'form-input-error');
                 setState({ attendance: '' });
-                analytics.track('attendance_cleared');
             });
 
             elements.sortAndHighlightButton.addEventListener('click', () => {
@@ -703,9 +664,6 @@
 
                 const validCount = sortedValid.length;
                 showToast(`Sorted ${validCount} valid roll${validCount !== 1 ? 's' : ''}`);
-                analytics.track('attendance_sorted', {
-                    valid_rolls: validCount
-                });
             });
 
             const fastFields = ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic'];
@@ -736,9 +694,6 @@
             elements.classType.addEventListener('change', e => {
                 toggleClassTypeFields();
                 onInputChange('classType', e.target.value);
-                analytics.track('class_type_changed', {
-                    class_type: e.target.value
-                });
             });
 
             elements.attendanceModeToggle.addEventListener('click', e => {
@@ -746,9 +701,6 @@
                     const newMode = e.target.dataset.mode;
                     updateAttendanceModeUI(newMode);
                     onInputChange('attendanceInputMode', newMode);
-                    analytics.track('attendance_mode_changed', {
-                        mode: newMode
-                    });
                 }
             });
 
@@ -769,9 +721,6 @@
                 const target = new Date();
                 target.setDate(target.getDate() + offsetDays);
                 datePicker.setDate(target, true);
-                analytics.track('quick_date_selected', {
-                    offset_days: offsetDays
-                });
             };
             if (elements.setYesterdayButton) elements.setYesterdayButton.addEventListener("click", () => setDateByOffset(-1));
             if (elements.setTodayButton) elements.setTodayButton.addEventListener("click", () => setDateByOffset(0));
@@ -831,7 +780,6 @@
 
                     showToast("Form cleared");
                     updateUndoRedoButtons();
-                    analytics.track('form_reset');
                 }
             };
             elements.clearFormButton.addEventListener("click", resetForm);
@@ -909,24 +857,14 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             const copyReportData = (trigger = 'menu') => {
                 const text = buildReportCopyText();
                 if (!text) return;
-                copyText(text, "Copied", "G-Doc Data").then((didCopy) => {
-                    if (!didCopy) return;
-                    analytics.track('report_data_copied', {
-                        trigger
-                    });
-                });
+                copyText(text, "Copied", "G-Doc Data");
                 closeDownloadMenu();
             };
 
             const copySheetData = (trigger = 'menu') => {
                 const text = buildSheetCopyText();
                 if (!text) return;
-                copyText(text, "Copied", "G-Sheet Data").then((didCopy) => {
-                    if (!didCopy) return;
-                    analytics.track('sheet_data_copied', {
-                        trigger
-                    });
-                });
+                copyText(text, "Copied", "G-Sheet Data");
                 closeDownloadMenu();
             };
 
@@ -949,22 +887,10 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             document.querySelectorAll('.nav-section-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    switchSection(btn.dataset.target);
-                    analytics.track('section_navigated', {
-                        target_section: btn.dataset.target,
-                        trigger: 'nav_tab'
-                    });
-                });
+                btn.addEventListener('click', () => switchSection(btn.dataset.target));
             });
             document.querySelectorAll('[data-switch]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    switchSection(btn.dataset.switch);
-                    analytics.track('section_navigated', {
-                        target_section: btn.dataset.switch,
-                        trigger: 'section_button'
-                    });
-                });
+                btn.addEventListener('click', () => switchSection(btn.dataset.switch));
             });
 
             document.addEventListener('keydown', (event) => {
@@ -1010,10 +936,6 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
 
                 event.preventDefault();
                 switchSection(sectionOrder[nextIndex]);
-                analytics.track('section_navigated', {
-                    target_section: sectionOrder[nextIndex],
-                    trigger: 'keyboard'
-                });
                 const section = document.getElementById(sectionOrder[nextIndex]);
                 const firstFocusable = section && Array.from(section.querySelectorAll('input, select, textarea, button'))
                     .find(el => !el.disabled && el.offsetParent);
@@ -1024,9 +946,6 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             undoStack.push(JSON.stringify(initialState));
             loadStateWithoutRecording(initialState);
             switchSection('section1');
-            analytics.track('app_opened', {
-                had_saved_state: Boolean(safeStorage.get(STORAGE_KEY))
-            });
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'hidden') flushPendingSave();
