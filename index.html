@@ -43,6 +43,44 @@
 
         applySystemTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     </script>
+    <script>
+        window.APP_ANALYTICS_CONFIG = {
+            enabled: true,
+            apiKey: 'phc_9TJmJqjag8AxUvId3WfGy9jVgfHCENx25T0zGXaBmB7',
+            apiHost: 'https://us.i.posthog.com',
+            debug: false,
+            appVersion: '2026.03.19'
+        };
+
+        (function bootstrapPosthog(globalScope, doc) {
+            const config = globalScope.APP_ANALYTICS_CONFIG || {};
+            if (!config.enabled || !config.apiKey) return;
+
+            if (!globalScope.posthog) globalScope.posthog = [];
+            if (typeof globalScope.posthog.init === 'function') return;
+
+            const script = doc.createElement('script');
+            script.async = true;
+            script.src = 'https://us.i.posthog.com/static/array.js';
+            script.onload = function onPosthogLoaded() {
+                if (!globalScope.posthog || typeof globalScope.posthog.init !== 'function') return;
+                globalScope.posthog.init(config.apiKey, {
+                    api_host: config.apiHost || 'https://us.i.posthog.com',
+                    autocapture: true,
+                    capture_pageview: true,
+                    debug: Boolean(config.debug),
+                    person_profiles: 'identified_only',
+                    loaded: function onClientLoaded(client) {
+                        client.register({
+                            app_name: 'Attendance Pro',
+                            app_version: config.appVersion || 'local'
+                        });
+                    }
+                });
+            };
+            doc.head.appendChild(script);
+        })(window, document);
+    </script>
 </head>
 
 <body>
