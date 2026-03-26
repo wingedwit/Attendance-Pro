@@ -116,6 +116,10 @@
             let flatpickrLoadPromise = null;
             let flatpickrInstance = null;
             let toastTimer = null;
+            const trackEvent = (eventName, params = {}) => {
+                if (typeof window.gtag !== 'function') return;
+                window.gtag('event', eventName, params);
+            };
 
             const getInitialState = () => ({
                 date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
@@ -859,9 +863,10 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 if (!text) return;
                 copyText(text, "Copied", "G-Doc Data");
                 closeDownloadMenu();
+                trackEvent('copy_gdoc_data', { trigger });
             };
 
-            const copySheetData = (trigger = 'menu') => {
+            const copySheetData = () => {
                 const text = buildSheetCopyText();
                 if (!text) return;
                 copyText(text, "Copied", "G-Sheet Data");
@@ -879,7 +884,7 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             });
 
             elements.downloadOptionSheet.addEventListener("click", () => {
-                copySheetData('menu');
+                copySheetData();
             });
 
             document.addEventListener("click", (event) => {
@@ -906,7 +911,7 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 ) {
                     event.preventDefault();
                     if (isDocShortcut) copyReportData('shortcut');
-                    if (isSheetShortcut) copySheetData('shortcut');
+                    if (isSheetShortcut) copySheetData();
                     return;
                 }
 
