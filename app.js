@@ -6,8 +6,9 @@
             getDurationString
         } = window.AttendanceDateUtils;
         const { safeStorage, loadStateFromStorage } = window.AttendanceStorageUtils;
-        const { createAttendanceEngine, groupNumbersIntoRanges } = window.AttendanceLogic;
+        const { MAX_ROLL_RANGE_SIZE = 5000, createAttendanceEngine, groupNumbersIntoRanges } = window.AttendanceLogic;
 
+        const APP_VERSION = '1.0.5';
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;
@@ -39,7 +40,13 @@
             target.classList.remove('hidden');
 
             getNavButtons().forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.target === targetId);
+                const isActive = btn.dataset.target === targetId;
+                btn.classList.toggle('active', isActive);
+                if (isActive) {
+                    btn.setAttribute('aria-current', 'step');
+                } else {
+                    btn.removeAttribute('aria-current');
+                }
             });
 
             if (targetId === 'section3') {
@@ -314,10 +321,14 @@
 
             const getStateDurationInHours = () => getDurationInHours(state.startTime, state.endTime);
             const getStateDurationString = () => getDurationString(state.startTime, state.endTime);
+            const parseRollBoundary = (value) => {
+                const text = String(value || '').trim();
+                return /^\d+$/.test(text) ? Number(text) : NaN;
+            };
 
             const getRollRanges = () => [
-                state.minRoll === '' ? NaN : parseInt(state.minRoll || '', 10),
-                state.maxRoll === '' ? NaN : parseInt(state.maxRoll || '', 10)
+                state.minRoll === '' ? NaN : parseRollBoundary(state.minRoll),
+                state.maxRoll === '' ? NaN : parseRollBoundary(state.maxRoll)
             ];
 
             const attendanceEngine = createAttendanceEngine(getRollRanges);
@@ -326,10 +337,11 @@
             const getAttendanceStats = (inputNumbers, inputMode) => attendanceEngine.getAttendanceStats(inputNumbers, inputMode);
 
             const attendanceModeButtons = Array.from(elements.attendanceModeToggle.querySelectorAll('button'));
-            const presentModeButton = elements.attendanceModeToggle.querySelector('[data-mode="present"]');
             const updateAttendanceModeUI = (mode) => {
                 attendanceModeButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.mode === mode);
+                    const isActive = btn.dataset.mode === mode;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
                 });
             };
 
@@ -454,6 +466,19 @@
                     lastReportStatusHtml = setSectionHtml(
                         reportStatusNode,
                         `<div class="flex flex-col items-center justify-center p-8 text-error-light dark:text-error-dark border-2 border-dashed border-error-light/30 rounded-xl dark:border-error-dark/30"><p>Min Roll cannot be greater than Max Roll.</p></div>`,
+                        lastReportStatusHtml
+                    );
+                    lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
+                    invalidateRenderedStatsCache();
+                    return;
+                }
+
+                if ((maxRoll - minRoll + 1) > MAX_ROLL_RANGE_SIZE) {
+                    elements.minRoll.classList.add('form-input-error');
+                    elements.maxRoll.classList.add('form-input-error');
+                    lastReportStatusHtml = setSectionHtml(
+                        reportStatusNode,
+                        `<div class="flex flex-col items-center justify-center p-8 text-error-light dark:text-error-dark border-2 border-dashed border-error-light/30 rounded-xl dark:border-error-dark/30"><p>Roll range is too large. Use ${MAX_ROLL_RANGE_SIZE} rolls or fewer.</p></div>`,
                         lastReportStatusHtml
                     );
                     lastReportStatsHtml = setSectionHtml(reportStatsNode, '', lastReportStatsHtml);
@@ -773,8 +798,7 @@
                     elements.errorMessage.textContent = '';
                     elements.rollCount.textContent = '0';
 
-                    attendanceModeButtons.forEach(btn => btn.classList.remove('active'));
-                    if (presentModeButton) presentModeButton.classList.add('active');
+                    updateAttendanceModeUI('present');
 
                     toggleClassTypeFields();
 
@@ -841,6 +865,10 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                     showToast("Invalid Roll Range", true);
                     return null;
                 }
+                if ((max - min + 1) > MAX_ROLL_RANGE_SIZE) {
+                    showToast(`Use ${MAX_ROLL_RANGE_SIZE} rolls or fewer`, true);
+                    return null;
+                }
 
                 const { presentNumbers } = getAttendanceStats(validation.numbers, state.attendanceInputMode);
                 const presentSet = new Set(presentNumbers);
@@ -856,6 +884,11 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
             const closeDownloadMenu = () => {
                 elements.downloadMenu.classList.remove('open');
                 elements.downloadButton.setAttribute('aria-expanded', 'false');
+            };
+
+            const openDownloadMenu = () => {
+                elements.downloadMenu.classList.add('open');
+                elements.downloadButton.setAttribute('aria-expanded', 'true');
             };
 
             const copyReportData = (trigger = 'menu') => {
@@ -877,6 +910,12 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
                 event.stopPropagation();
                 const isOpen = elements.downloadMenu.classList.toggle('open');
                 elements.downloadButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+            elements.downloadButton.addEventListener("keydown", (event) => {
+                if (event.key !== 'ArrowDown') return;
+                event.preventDefault();
+                openDownloadMenu();
+                elements.downloadOptionReport.focus();
             });
 
             elements.downloadOptionReport.addEventListener("click", () => {
@@ -900,6 +939,12 @@ Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
 
             document.addEventListener('keydown', (event) => {
                 const key = String(event.key || '').toLowerCase();
+                if (event.key === 'Escape' && elements.downloadMenu.classList.contains('open')) {
+                    closeDownloadMenu();
+                    elements.downloadButton.focus();
+                    return;
+                }
+
                 const isDocShortcut = event.ctrlKey && event.altKey && !event.shiftKey && !event.metaKey &&
                     (event.code === 'KeyD' || key === 'd');
                 const isSheetShortcut = event.ctrlKey && event.altKey && !event.shiftKey && !event.metaKey &&

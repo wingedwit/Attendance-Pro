@@ -219,6 +219,21 @@
         }
         .action-btn:hover { filter: brightness(0.98); transform: translateY(-1px); }
         .dark .action-btn:hover { filter: brightness(1.06); }
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        summary:focus-visible {
+            outline: 3px solid rgba(23, 105, 255, 0.28);
+            outline-offset: 3px;
+        }
+        .dark button:focus-visible,
+        .dark input:focus-visible,
+        .dark select:focus-visible,
+        .dark textarea:focus-visible,
+        .dark summary:focus-visible {
+            outline-color: rgba(102, 163, 255, 0.38);
+        }
 
         .action-btn.primary {
             background-color: var(--primary-light); 
@@ -325,6 +340,10 @@
             transition: background-color 0.16s ease, color 0.16s ease;
         }
         .download-option:hover {
+            background-color: rgba(23, 105, 255, 0.1);
+            color: var(--primary-light);
+        }
+        .download-option:focus-visible {
             background-color: rgba(23, 105, 255, 0.1);
             color: var(--primary-light);
         }
@@ -700,5 +719,27 @@
             .developer-credit {
                 flex-wrap: wrap;
                 gap: 0.6rem;
+            }
+
+            .section-footer {
+                flex-wrap: wrap;
+            }
+
+            .section-footer .action-btn,
+            .count-display {
+                flex: 1 1 100%;
+                justify-content: center;
+                text-align: center;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
             }
         }

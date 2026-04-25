@@ -1,5 +1,5 @@
 // Keep in sync with APP_VERSION in app.js for controlled release rollouts.
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
@@ -47,6 +47,14 @@ const OFFLINE_HTML = `<!doctype html>
 const shouldCacheResponse = (response) =>
   Boolean(response) && response.ok && response.type === 'basic';
 
+const addShellAsset = async (cache, url) => {
+  try {
+    await cache.add(url);
+  } catch (_) {
+    // A missing optional asset should not block the whole service worker update.
+  }
+};
+
 const trimRuntimeCache = async () => {
   const cache = await caches.open(RUNTIME_CACHE);
   const keys = await cache.keys();
@@ -58,7 +66,7 @@ const trimRuntimeCache = async () => {
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
-    await cache.addAll(APP_SHELL);
+    await Promise.all(APP_SHELL.map((url) => addShellAsset(cache, url)));
     self.skipWaiting();
   })());
 });
