@@ -8,7 +8,6 @@
         const { safeStorage, loadStateFromStorage } = window.AttendanceStorageUtils;
         const { MAX_ROLL_RANGE_SIZE = 5000, createAttendanceEngine, groupNumbersIntoRanges } = window.AttendanceLogic;
 
-        const APP_VERSION = '1.0.5';
         const STORAGE_KEY = 'attendanceProData';
         const STORAGE_VERSION = 2;
         let debounceTimer = null;
@@ -336,6 +335,53 @@
             const buildValidationErrorMessage = (validation) => attendanceEngine.buildValidationErrorMessage(validation);
             const getAttendanceStats = (inputNumbers, inputMode) => attendanceEngine.getAttendanceStats(inputNumbers, inputMode);
 
+            const getRollRangeStatus = () => {
+                const [min, max] = getRollRanges();
+                if (Number.isNaN(min) || Number.isNaN(max)) return { valid: false, min, max, reason: 'missing' };
+                if (min > max) return { valid: false, min, max, reason: 'reversed' };
+                if ((max - min + 1) > MAX_ROLL_RANGE_SIZE) return { valid: false, min, max, reason: 'tooLarge' };
+                return { valid: true, min, max, reason: '' };
+            };
+
+            const getClassTypeLine = () => {
+                if (state.classType === "Theory" && state.theoryType) return `Lecture (${state.theoryType})`;
+                if (state.classType === "Practical" && state.batch) return `Practical (${state.batch})`;
+                return state.classType || '-';
+            };
+
+            const getReportTimeLine = () => {
+                const duration = getStateDurationString();
+                const formattedStartTime = formatTimeForReport(state.startTime);
+                const formattedEndTime = formatTimeForReport(state.endTime);
+                if (!formattedStartTime || !formattedEndTime) return 'N/A';
+                return `${formattedStartTime} - ${formattedEndTime}${duration ? ` (${duration})` : ''}`;
+            };
+
+            const getReportModel = () => {
+                const range = getRollRangeStatus();
+                const validation = getValidationResult(state.attendance);
+                const stats = range.valid
+                    ? getAttendanceStats(validation.numbers, state.attendanceInputMode)
+                    : { presentNumbers: [], absentNumbers: [], allNumbers: [] };
+                const total = stats.allNumbers.length;
+                const presentPct = total ? (stats.presentNumbers.length / total * 100) : 0;
+                const absentPct = total ? (stats.absentNumbers.length / total * 100) : 0;
+
+                return {
+                    range,
+                    validation,
+                    stats,
+                    total,
+                    presentPct,
+                    absentPct,
+                    dateWithDay: getFormattedDateWithDay(state.date),
+                    timeLine: getReportTimeLine(),
+                    typeLine: getClassTypeLine(),
+                    presentRanges: groupNumbersIntoRangesCached(stats.presentNumbers),
+                    absentRanges: groupNumbersIntoRangesCached(stats.absentNumbers)
+                };
+            };
+
             const attendanceModeButtons = Array.from(elements.attendanceModeToggle.querySelectorAll('button'));
             const updateAttendanceModeUI = (mode) => {
                 attendanceModeButtons.forEach(btn => {
@@ -419,28 +465,23 @@
 
             const renderOutput = () => {
                 const { attendance, attendanceInputMode } = state;
-                const [minRoll, maxRoll] = getRollRanges();
+                const report = getReportModel();
+                const { range, validation } = report;
                 updateRollCount(attendance);
                 ensureOutputStructure();
 
-                const duration = getStateDurationString();
-                const formattedStartTime = formatTimeForReport(state.startTime);
-                const formattedEndTime = formatTimeForReport(state.endTime);
-                const liveReportTimeLine = (formattedStartTime && formattedEndTime)
-                    ? `${formattedStartTime} - ${formattedEndTime} (${duration})`
-                    : "N/A";
-                const row = (l, v) => `<div class="mb-3"><p class="text-sm uppercase tracking-wider opacity-90 mb-1 font-bold">${escapeHtml(l)}</p><p class="font-medium text-lg">${escapeHtml(v || '—')}</p></div>`;
+                const row = (label, value) => `<div class="mb-3"><p class="text-sm uppercase tracking-wider opacity-90 mb-1 font-bold">${escapeHtml(label)}</p><p class="font-medium text-lg">${escapeHtml(value || '-')}</p></div>`;
                 
                 const metaHtml = `
                     <div class="report-card p-5">
                         <div class="grid grid-cols-2 gap-4">
                             ${row("Faculty", state.facultyName)}
-                            ${row("Senior Resident", state.srName || '—')}
+                            ${row("Senior Resident", state.srName)}
                             ${row("Topic", state.lectureTopic)}
                         </div>
                         <div class="grid grid-cols-2 gap-4 pt-2 border-t border-outline-light/10 mt-2 dark:border-outline-dark/10">
-                            ${row("Date", getFormattedDateWithDay(state.date))}
-                            ${row("Time (Duration)", liveReportTimeLine)}
+                            ${row("Date", report.dateWithDay)}
+                            ${row("Time (Duration)", report.timeLine)}
                         </div>
                     </div>
                 `;
@@ -449,7 +490,7 @@
                 elements.minRoll.classList.remove('form-input-error');
                 elements.maxRoll.classList.remove('form-input-error');
 
-                if (isNaN(minRoll) || isNaN(maxRoll)) {
+                if (range.reason === 'missing') {
                     lastReportStatusHtml = setSectionHtml(
                         reportStatusNode,
                         `<div class="flex flex-col items-center justify-center p-8 opacity-50 border-2 border-dashed border-outline-light/20 rounded-xl dark:border-outline-dark/20"><p>Set a valid Min/Max roll number range to see stats.</p></div>`,
@@ -460,7 +501,7 @@
                     return;
                 }
 
-                if (minRoll > maxRoll) {
+                if (range.reason === 'reversed') {
                     elements.minRoll.classList.add('form-input-error');
                     elements.maxRoll.classList.add('form-input-error');
                     lastReportStatusHtml = setSectionHtml(
@@ -473,7 +514,7 @@
                     return;
                 }
 
-                if ((maxRoll - minRoll + 1) > MAX_ROLL_RANGE_SIZE) {
+                if (range.reason === 'tooLarge') {
                     elements.minRoll.classList.add('form-input-error');
                     elements.maxRoll.classList.add('form-input-error');
                     lastReportStatusHtml = setSectionHtml(
@@ -486,7 +527,6 @@
                     return;
                 }
                 
-                const validation = getValidationResult(attendance);
                 elements.attendanceInput.classList.remove("form-input-error", "form-input-valid");
                 
                 if (validation.valid) {
@@ -512,14 +552,13 @@
                 const shouldRebuildStatsSection =
                     lastRenderedStatsNumbersRef !== validation.numbers ||
                     lastRenderedStatsMode !== attendanceInputMode ||
-                    lastRenderedStatsMin !== minRoll ||
-                    lastRenderedStatsMax !== maxRoll;
+                    lastRenderedStatsMin !== range.min ||
+                    lastRenderedStatsMax !== range.max;
 
                 if (!shouldRebuildStatsSection) return;
 
-                const { presentNumbers, absentNumbers, allNumbers } = getAttendanceStats(validation.numbers, attendanceInputMode);
-                const presentPct = allNumbers.length ? (presentNumbers.length / allNumbers.length * 100) : 0;
-                const absentPct = allNumbers.length ? (absentNumbers.length / allNumbers.length * 100) : 0;
+                const { presentNumbers, absentNumbers } = report.stats;
+                const { presentPct, absentPct } = report;
 
                 const createMeter = (pct, colorClass) => `
                     <div class="relative w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-2 overflow-hidden">
@@ -529,8 +568,6 @@
                         <div class="quartile-marker" style="left: 75%"></div>
                     </div>`;
 
-                const presentRanges = groupNumbersIntoRangesCached(presentNumbers);
-                const absentRanges = groupNumbersIntoRangesCached(absentNumbers);
                 const buildPillsHtml = (ranges, pillClass, headingLabel) => {
                     if (!ranges.length) return '';
                     const toPill = (range) => `<span class="${pillClass} attendance-pill shadow-sm">${range}</span>`;
@@ -551,8 +588,8 @@
                         </div>
                     `;
                 };
-                const presentPillsHtml = buildPillsHtml(presentRanges, 'present-pill', 'Present');
-                const absentPillsHtml = buildPillsHtml(absentRanges, 'absent-pill', 'Absent');
+                const presentPillsHtml = buildPillsHtml(report.presentRanges, 'present-pill', 'Present');
+                const absentPillsHtml = buildPillsHtml(report.absentRanges, 'absent-pill', 'Absent');
                 const statsHtml = `
                     <div class="space-y-6">
                         <div class="grid grid-cols-2 gap-4">
@@ -581,8 +618,8 @@
                 lastReportStatsHtml = setSectionHtml(reportStatsNode, statsHtml, lastReportStatsHtml);
                 lastRenderedStatsNumbersRef = validation.numbers;
                 lastRenderedStatsMode = attendanceInputMode;
-                lastRenderedStatsMin = minRoll;
-                lastRenderedStatsMax = maxRoll;
+                lastRenderedStatsMin = range.min;
+                lastRenderedStatsMax = range.max;
             };
 
             const recordAndRender = (newState) => {
@@ -813,65 +850,47 @@
             elements.clearFormButton.addEventListener("click", resetForm);
 
             const buildReportCopyText = () => {
-                const validation = getValidationResult(state.attendance);
-                if (!validation.valid && state.attendance.trim() !== "") { 
+                const report = getReportModel();
+                if (!report.validation.valid && state.attendance.trim() !== "") { 
                     showToast("Fix errors first", true); 
                     return null;
                 }
                 
-                const { presentNumbers, absentNumbers, allNumbers } = getAttendanceStats(validation.numbers, state.attendanceInputMode);
-                const duration = getStateDurationString();
-                const total = allNumbers.length;
-                const pPct = total ? ((presentNumbers.length / total) * 100).toFixed(1) : "0.0";
-                const aPct = total ? ((absentNumbers.length / total) * 100).toFixed(1) : "0.0";
+                const { presentNumbers, absentNumbers } = report.stats;
 
-                const formattedStartTime = formatTimeForReport(state.startTime);
-                const formattedEndTime = formatTimeForReport(state.endTime);
-                const timeLine = formattedStartTime && formattedEndTime 
-                    ? `${formattedStartTime} - ${formattedEndTime}${duration ? ` (${duration})` : ''}` 
-                    : 'N/A';
-
-                let typeLine = state.classType;
-                if (state.classType === "Theory" && state.theoryType) {
-                    typeLine = `Lecture (${state.theoryType})`;
-                } else if (state.classType === "Practical" && state.batch) {
-                    typeLine = `Practical (${state.batch})`;
-                }
-
-                const dateWithDay = getFormattedDateWithDay(state.date).replace(
+                const dateWithDay = report.dateWithDay.replace(
                     /^(\d{2})-(\d{2})-(\d{4})/,
                     '$1/$2/$3'
                 );
 
-                const text = `Date: ${dateWithDay}, Time: ${timeLine}
-Faculty - ${state.facultyName || '—'}, Senior Resident - ${state.srName || '—'}
-Topic - ${state.lectureTopic || '—'}
-Type - ${typeLine || '—'}
-Total Students: ${total}, Present: ${presentNumbers.length} (${pPct}%), Absent: ${absentNumbers.length} (${aPct}%)
-Present Students: ${groupNumbersIntoRanges(presentNumbers).join(', ') || 'None'}
-Absent Students: ${groupNumbersIntoRanges(absentNumbers).join(', ') || 'None'}`;
+                const text = `Date: ${dateWithDay}, Time: ${report.timeLine}
+Faculty - ${state.facultyName || '-'}, Senior Resident - ${state.srName || '-'}
+Topic - ${state.lectureTopic || '-'}
+Type - ${report.typeLine || '-'}
+Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)
+Present Students: ${report.presentRanges.join(', ') || 'None'}
+Absent Students: ${report.absentRanges.join(', ') || 'None'}`;
                 return text;
             };
 
             const buildSheetCopyText = () => {
-                const validation = getValidationResult(state.attendance);
-                if (!validation.valid && state.attendance.trim() !== "") {
+                const report = getReportModel();
+                if (!report.validation.valid && state.attendance.trim() !== "") {
                     showToast("Invalid roll numbers", true);
                     return null;
                 }
 
-                const [min, max] = getRollRanges();
-                if (isNaN(min) || isNaN(max) || min > max) {
+                const { min, max, reason } = report.range;
+                if (reason === 'missing' || reason === 'reversed') {
                     showToast("Invalid Roll Range", true);
                     return null;
                 }
-                if ((max - min + 1) > MAX_ROLL_RANGE_SIZE) {
+                if (reason === 'tooLarge') {
                     showToast(`Use ${MAX_ROLL_RANGE_SIZE} rolls or fewer`, true);
                     return null;
                 }
 
-                const { presentNumbers } = getAttendanceStats(validation.numbers, state.attendanceInputMode);
-                const presentSet = new Set(presentNumbers);
+                const presentSet = new Set(report.stats.presentNumbers);
                 const durationVal = getStateDurationInHours() || 1;
 
                 const rows = [];
