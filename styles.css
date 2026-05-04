@@ -446,7 +446,15 @@
         }
 
         .section-content {
+            height: auto;
+            min-height: 100%;
             transition: opacity 0.14s ease, transform 0.14s ease;
+        }
+        #section3.section-content {
+            height: 100%;
+        }
+        #section3 .flex-1 {
+            min-height: 16rem;
         }
         .section-content.hidden {
             opacity: 0;
