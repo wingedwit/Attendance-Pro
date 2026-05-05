@@ -456,6 +456,9 @@
         #section3 .flex-1 {
             min-height: 16rem;
         }
+        #section2 {
+            padding-bottom: 0.25rem;
+        }
         .section-content.hidden {
             opacity: 0;
             transform: translateX(-20px);
