@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resident Pro</title>
+    <meta name="theme-color" content="#1d4ed8">
+    <link rel="stylesheet" href="./styles.css">
+    <script>
+        function applySystemTheme(isDark) {
+            const root = document.documentElement;
+            root.classList.toggle('dark', Boolean(isDark));
+            root.style.colorScheme = isDark ? 'dark' : 'light';
+        }
+
+        applySystemTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    </script>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="panel-shell input-shell">
+            <header class="app-header">
+                <h1 class="caps-bold-heading">Resident Pro</h1>
+                <button id="clearButton" class="header-icon-button danger" type="button" title="Reset" aria-label="Reset form">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </header>
+
+            <main id="inputContainer">
+                <form id="sessionForm" class="form-stack" autocomplete="off">
+                    <label class="field">
+                        <span class="form-label-bold">Date</span>
+                        <input id="dateInput" name="date" type="date" class="form-input-m3">
+                    </label>
+
+                    <label class="field">
+                        <span class="form-label-bold">Topic</span>
+                        <input id="topicInput" name="topic" type="text" class="form-input-m3" placeholder="">
+                    </label>
+
+                    <label class="field">
+                        <span class="form-label-bold">Type</span>
+                        <select id="typeInput" name="type" class="form-input-m3">
+                            <option value="Group discussion">Group discussion</option>
+                            <option value="Journal club">Journal club</option>
+                            <option value="Seminar">Seminar</option>
+                        </select>
+                    </label>
+
+                    <label class="field">
+                        <span class="form-label-bold">Presenter Name</span>
+                        <input id="presenterInput" name="presenter" type="text" class="form-input-m3" placeholder="">
+                    </label>
+
+                    <label class="field">
+                        <span class="form-label-bold">Senior Resident Name</span>
+                        <input id="seniorResidentInput" name="seniorResident" type="text" class="form-input-m3" placeholder="">
+                    </label>
+
+                    <label class="field">
+                        <span class="form-label-bold">Moderator Name</span>
+                        <input id="moderatorInput" name="moderator" type="text" class="form-input-m3" placeholder="">
+                    </label>
+
+                    <div class="field attendance-field">
+                        <span class="form-label-bold">Resident Attendance</span>
+                        <button id="residentAttendanceButton" class="attendance-button" type="button">
+                            <span>Select residents</span>
+                            <strong id="residentAttendanceCount">0</strong>
+                        </button>
+                    </div>
+                </form>
+            </main>
+
+            <footer class="developer-credit">
+                Developed by Dr. Vaibhav Meena
+            </footer>
+        </aside>
+
+        <section class="panel-shell report-shell" aria-labelledby="reportTitle">
+            <header class="report-header">
+                <h2 id="reportTitle" class="caps-bold-heading">Live Report</h2>
+                <button id="copyDocButton" class="download-button" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
+                    </svg>
+                </button>
+            </header>
+
+            <div id="outputPanel">
+                <article id="liveReport" aria-live="polite"></article>
+            </div>
+        </section>
+
+        <div id="toast" role="status" aria-live="polite"></div>
+        <div id="savedIndicator" role="status" aria-live="polite">Saved</div>
+    </div>
+
+    <div id="residentModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="residentModalTitle">
+        <section class="modal-panel">
+            <header class="modal-header">
+                <h2 id="residentModalTitle" class="caps-bold-heading">Resident Attendance</h2>
+                <button id="residentModalClose" class="header-icon-button" type="button" title="Close" aria-label="Close resident attendance">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </header>
+            <div id="residentChecklist" class="resident-checklist"></div>
+            <footer class="modal-footer">
+                <button id="residentClearButton" class="modal-action secondary" type="button">Clear</button>
+                <button id="residentDoneButton" class="modal-action primary" type="button">Done</button>
+            </footer>
+        </section>
+    </div>
+
+    <script src="./app.js" defer></script>
+</body>
+</html>
