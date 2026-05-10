@@ -34,6 +34,7 @@ const residentChecklist = document.getElementById('residentChecklist');
 const residentModalClose = document.getElementById('residentModalClose');
 const residentClearButton = document.getElementById('residentClearButton');
 const residentDoneButton = document.getElementById('residentDoneButton');
+const datePillButtons = Array.from(document.querySelectorAll('[data-date-offset]'));
 const toast = document.getElementById('toast');
 const savedIndicator = document.getElementById('savedIndicator');
 
@@ -149,7 +150,7 @@ const renderReport = () => {
     liveReport.innerHTML = `
         <div class="report-block">
             ${getReportRows().map(([label, value]) => `
-                <div class="report-card">
+                <div class="report-card${label === 'Topic' ? ' topic-card' : ''}">
                     <p class="report-label">${escapeHtml(label)}</p>
                     <p class="report-value">${escapeHtml(value)}</p>
                 </div>
@@ -227,6 +228,16 @@ const setState = (patch) => {
 Object.entries(fields).forEach(([key, input]) => {
     input.addEventListener('input', () => setState({ [key]: input.value }));
     input.addEventListener('change', () => setState({ [key]: input.value }));
+});
+
+datePillButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        const date = new Date();
+        date.setDate(date.getDate() + Number(button.dataset.dateOffset || 0));
+        const nextDate = date.toISOString().slice(0, 10);
+        fields.date.value = nextDate;
+        setState({ date: nextDate });
+    });
 });
 
 residentAttendanceButton.addEventListener('click', openResidentModal);

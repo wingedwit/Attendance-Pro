@@ -31,11 +31,18 @@
             <main id="inputContainer">
                 <form id="sessionForm" class="form-stack" autocomplete="off">
                     <label class="field">
-                        <span class="form-label-bold">Date</span>
+                        <span class="field-heading">
+                            <span class="form-label-bold">Date</span>
+                            <span class="date-pills" aria-label="Quick date options">
+                                <button type="button" class="date-pill" data-date-offset="-1">Yesterday</button>
+                                <button type="button" class="date-pill" data-date-offset="0">Today</button>
+                                <button type="button" class="date-pill" data-date-offset="1">Tomorrow</button>
+                            </span>
+                        </span>
                         <input id="dateInput" name="date" type="date" class="form-input-m3">
                     </label>
 
-                    <label class="field">
+                    <label class="field topic-field">
                         <span class="form-label-bold">Topic</span>
                         <input id="topicInput" name="topic" type="text" class="form-input-m3" placeholder="">
                     </label>

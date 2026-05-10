@@ -159,6 +159,7 @@ button {
     gap: 1.15rem;
 }
 
+.topic-field,
 .attendance-field {
     grid-column: 1 / -1;
 }
@@ -175,6 +176,51 @@ button {
     letter-spacing: 0.01em;
     text-transform: capitalize;
     opacity: 0.9;
+}
+
+.field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.field-heading .form-label-bold {
+    margin-bottom: 0;
+}
+
+.date-pills {
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+.date-pill {
+    min-height: 1.9rem;
+    border: 1px solid var(--outline-light);
+    border-radius: 999px;
+    padding: 0 0.65rem;
+    color: var(--on-surface-light);
+    background-color: transparent;
+    font-size: 0.72rem;
+    font-weight: 750;
+    transition: background-color 0.16s ease, transform 0.16s ease, filter 0.16s ease;
+}
+
+.date-pill:hover {
+    background-color: var(--surface-container-light);
+    transform: translateY(-1px);
+}
+
+.dark .date-pill {
+    border-color: var(--outline-dark);
+    color: var(--on-surface-dark);
+    background-color: rgba(34, 42, 56, 0.82);
+}
+
+.dark .date-pill:hover {
+    background-color: rgba(44, 52, 66, 0.9);
+    filter: brightness(1.06);
 }
 
 .dark .form-label-bold {
@@ -343,6 +389,10 @@ button {
     box-shadow: 0 10px 24px rgba(23, 64, 129, 0.08);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+}
+
+.topic-card {
+    grid-column: 1 / -1;
 }
 
 .dark .report-card {
