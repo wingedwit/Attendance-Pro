@@ -150,7 +150,7 @@ const renderReport = () => {
     liveReport.innerHTML = `
         <div class="report-block">
             ${getReportRows().map(([label, value]) => `
-                <div class="report-card${label === 'Topic' ? ' topic-card' : ''}">
+                <div class="report-card${label === 'Topic' || label === 'Resident Present' ? ' wide-card' : ''}">
                     <p class="report-label">${escapeHtml(label)}</p>
                     <p class="report-value">${escapeHtml(value)}</p>
                 </div>

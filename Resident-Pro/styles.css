@@ -391,7 +391,7 @@ button {
     -webkit-backdrop-filter: blur(10px);
 }
 
-.topic-card {
+.wide-card {
     grid-column: 1 / -1;
 }
 
