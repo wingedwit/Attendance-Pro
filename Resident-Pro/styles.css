@@ -521,13 +521,37 @@ select.form-input-m3 {
     background: var(--surface);
 }
 
-.resident-group-title {
+.resident-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin: 0 0 0.72rem;
+}
+
+.resident-group-title {
+    margin: 0;
     color: var(--secondary-strong);
     font-size: 0.82rem;
     font-weight: 900;
     letter-spacing: 0;
     text-transform: uppercase;
+}
+
+.group-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.group-select-all input {
+    width: 0.9rem;
+    height: 0.9rem;
+    accent-color: var(--primary);
+    cursor: pointer;
 }
 
 .resident-option {
@@ -575,6 +599,93 @@ select.form-input-m3 {
 .modal-action.secondary {
     color: var(--text);
     background: var(--surface);
+}
+
+/* Empty picker styles */
+.attendance-button.empty-picker {
+    color: var(--muted);
+    border-style: dashed;
+    border-width: 1.5px;
+    background: transparent;
+}
+.attendance-button.empty-picker:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+}
+
+/* Entrance animation */
+.entrance-animate .field {
+    animation: slideFadeIn 0.4s ease-out forwards;
+    animation-delay: calc(var(--i) * 0.05s);
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+@keyframes slideFadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Report card update animation */
+.report-card.flash {
+    animation: flashHighlight 0.6s ease-out;
+}
+
+@keyframes flashHighlight {
+    0% {
+        background-color: var(--primary-soft);
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: var(--panel-strong);
+        transform: scale(1);
+    }
+}
+
+/* Copy button success state */
+.download-button.success {
+    background: #10b981;
+    box-shadow: 0 12px 28px rgba(16, 185, 129, 0.28);
+}
+
+/* Confirm Modal */
+.confirm-panel {
+    min-width: 24rem;
+}
+.confirm-content {
+    padding: 1.5rem;
+    text-align: center;
+}
+.confirm-icon {
+    width: 3rem;
+    height: 3rem;
+    color: var(--danger);
+    margin-bottom: 1rem;
+}
+.confirm-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text);
+}
+.confirm-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.5;
+}
+.confirm-footer {
+    background: var(--surface);
+}
+.danger-action {
+    background: var(--danger);
+    color: white;
+    border-color: transparent;
+}
+.danger-action:hover {
+    background: #b91c1c;
 }
 
 @keyframes backdropIn {

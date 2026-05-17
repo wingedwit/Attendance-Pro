@@ -30,8 +30,8 @@
             </header>
 
             <main id="inputContainer">
-                <form id="sessionForm" class="form-stack" autocomplete="off">
-                    <label class="field">
+                <form id="sessionForm" class="form-stack entrance-animate" autocomplete="off">
+                    <label class="field" style="--i:0">
                         <span class="field-heading">
                             <span class="form-label-bold">Date</span>
                             <span class="date-pills" aria-label="Quick date options">
@@ -43,14 +43,15 @@
                         <input id="dateInput" name="date" type="date" class="form-input-m3">
                     </label>
 
-                    <label class="field topic-field">
+                    <label class="field topic-field" style="--i:1">
                         <span class="form-label-bold">Topic</span>
                         <input id="topicInput" name="topic" type="text" class="form-input-m3" placeholder="">
                     </label>
 
-                    <label class="field">
+                    <label class="field" style="--i:2">
                         <span class="form-label-bold">Type</span>
                         <select id="typeInput" name="type" class="form-input-m3">
+                            <option value="" selected hidden></option>
                             <option value="Group discussion">Group discussion</option>
                             <option value="Journal club">Journal club</option>
                             <option value="Seminar">Seminar</option>
@@ -58,31 +59,31 @@
                         </select>
                     </label>
 
-                    <div class="field">
+                    <div class="field" style="--i:3">
                         <span class="form-label-bold">Presenter</span>
-                        <button id="presenterPickerButton" class="attendance-button action-btn" type="button">
-                            <span id="presenterPickerValue">Select presenter</span>
+                        <button id="presenterPickerButton" class="attendance-button action-btn empty-picker" type="button">
+                            <span id="presenterPickerValue"></span>
                         </button>
                     </div>
 
-                    <div class="field">
+                    <div class="field" style="--i:4">
                         <span class="form-label-bold">Senior Resident</span>
-                        <button id="seniorPickerButton" class="attendance-button action-btn" type="button">
-                            <span id="seniorPickerValue">Select senior resident</span>
+                        <button id="seniorPickerButton" class="attendance-button action-btn empty-picker" type="button">
+                            <span id="seniorPickerValue"></span>
                         </button>
                     </div>
 
-                    <div class="field">
+                    <div class="field" style="--i:5">
                         <span class="form-label-bold">Moderator</span>
-                        <button id="moderatorPickerButton" class="attendance-button action-btn" type="button">
-                            <span id="moderatorPickerValue">Select moderator</span>
+                        <button id="moderatorPickerButton" class="attendance-button action-btn empty-picker" type="button">
+                            <span id="moderatorPickerValue"></span>
                         </button>
                     </div>
 
-                    <div class="field attendance-field">
+                    <div class="field attendance-field" style="--i:6">
                         <span class="form-label-bold">Resident Attendance</span>
-                        <button id="residentAttendanceButton" class="attendance-button action-btn" type="button">
-                            <span>Select residents</span>
+                        <button id="residentAttendanceButton" class="attendance-button action-btn empty-picker" type="button">
+                            <span></span>
                             <strong id="residentAttendanceCount">0</strong>
                         </button>
                     </div>
@@ -110,6 +111,24 @@
         </section>
 
         <div id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+        <section class="modal-panel confirm-panel">
+            <div class="confirm-content">
+                <svg class="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <h2 class="confirm-title">Reset Form?</h2>
+                <p class="confirm-text">All entered data will be cleared. This action cannot be undone.</p>
+            </div>
+            <footer class="modal-footer confirm-footer">
+                <button id="confirmCancelButton" class="modal-action secondary" type="button">Cancel</button>
+                <button id="confirmResetButton" class="modal-action danger-action" type="button">Reset</button>
+            </footer>
+        </section>
     </div>
 
     <div id="residentModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="residentModalTitle">

@@ -34,8 +34,13 @@ const fields = {
 
 const liveReport = document.getElementById('liveReport');
 const copyDocButton = document.getElementById('copyDocButton');
+const copyDocIcon = document.getElementById('copyDocIcon');
 const clearButton = document.getElementById('clearButton');
 const toast = document.getElementById('toast');
+
+const confirmModal = document.getElementById('confirmModal');
+const confirmCancelButton = document.getElementById('confirmCancelButton');
+const confirmResetButton = document.getElementById('confirmResetButton');
 
 const residentAttendanceButton = document.getElementById('residentAttendanceButton');
 const residentAttendanceCount = document.getElementById('residentAttendanceCount');
@@ -84,7 +89,7 @@ if (window.matchMedia) {
 const getInitialState = () => ({
     date: todayISO(),
     topic: '',
-    type: 'Group discussion',
+    type: '',
     presenter: '',
     seniorResident: '',
     moderator: '',
@@ -162,11 +167,19 @@ const getReportCardClass = (label) => {
     return `report-card ${label.toLowerCase().replace(/\s+/g, '-')}-card${wideClass}`;
 };
 
-const renderReport = () => {
+const renderReport = (patch) => {
+    const changedKeys = patch ? Object.keys(patch) : [];
+    const keyToLabel = {
+        date: 'Date', topic: 'Topic', type: 'Type',
+        presenter: 'Presenter', seniorResident: 'Senior Resident',
+        moderator: 'Moderator', residentsPresent: 'Resident Present'
+    };
+    const changedLabels = changedKeys.map(k => keyToLabel[k]);
+
     liveReport.innerHTML = `
         <div class="report-block">
             ${getReportRows().map(([label, value]) => `
-                <div class="${getReportCardClass(label)}">
+                <div class="${getReportCardClass(label)}${changedLabels.includes(label) ? ' flash' : ''}">
                     <p class="report-label">${escapeHtml(label)}</p>
                     <p class="report-value">${escapeHtml(value)}</p>
                 </div>
@@ -176,15 +189,21 @@ const renderReport = () => {
 };
 
 const updatePickerButtons = () => {
-    presenterPickerValue.textContent = state.presenter || 'Select presenter';
-    seniorPickerValue.textContent = state.seniorResident || 'Select senior resident';
-    moderatorPickerValue.textContent = state.moderator || 'Select moderator';
+    presenterPickerValue.textContent = state.presenter || '';
+    presenterPickerButton.classList.toggle('empty-picker', !state.presenter);
+
+    seniorPickerValue.textContent = state.seniorResident || '';
+    seniorPickerButton.classList.toggle('empty-picker', !state.seniorResident);
+
+    moderatorPickerValue.textContent = state.moderator || '';
+    moderatorPickerButton.classList.toggle('empty-picker', !state.moderator);
 
     const selectedCount = getSelectedResidents().length;
     residentAttendanceCount.textContent = String(selectedCount);
     residentAttendanceButton.querySelector('span').textContent = selectedCount
         ? `${selectedCount} resident${selectedCount === 1 ? '' : 's'} selected`
-        : 'Select residents';
+        : '';
+    residentAttendanceButton.classList.toggle('empty-picker', selectedCount === 0);
 
     datePillButtons.forEach((button) => {
         const date = new Date();
@@ -224,22 +243,31 @@ const setState = (patch) => {
     state = { ...state, ...patch };
     saveState();
     updatePickerButtons();
-    renderReport();
+    renderReport(patch);
 };
 
 const renderResidentChecklist = () => {
     const selectedSet = new Set(getSelectedResidents());
-    residentChecklist.innerHTML = RESIDENT_GROUPS.map((group) => `
+    residentChecklist.innerHTML = RESIDENT_GROUPS.map((group, groupIndex) => {
+        const allSelected = group.names.every(name => selectedSet.has(name));
+        return `
         <section class="resident-group">
-            <h3 class="resident-group-title">${escapeHtml(group.level)}</h3>
+            <div class="resident-group-header">
+                <h3 class="resident-group-title">${escapeHtml(group.level)}</h3>
+                <label class="group-select-all" aria-label="Select all ${escapeHtml(group.level)}">
+                    <input type="checkbox" class="group-checkbox" data-group-index="${groupIndex}" ${allSelected ? 'checked' : ''}>
+                    <span>All</span>
+                </label>
+            </div>
             ${group.names.map((name) => `
                 <label class="resident-option">
-                    <input type="checkbox" value="${escapeHtml(name)}" ${selectedSet.has(name) ? 'checked' : ''}>
+                    <input type="checkbox" class="resident-checkbox" value="${escapeHtml(name)}" ${selectedSet.has(name) ? 'checked' : ''}>
                     <span>${escapeHtml(name)}</span>
                 </label>
             `).join('')}
         </section>
-    `).join('');
+        `;
+    }).join('');
     residentSelectAll.checked = getSelectedResidents().length === ALL_RESIDENTS.length;
 };
 
@@ -311,10 +339,27 @@ residentClearButton.addEventListener('click', () => {
     renderResidentChecklist();
 });
 
-residentChecklist.addEventListener('change', () => {
-    const selected = Array.from(residentChecklist.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+residentChecklist.addEventListener('change', (e) => {
+    if (e.target.classList.contains('group-checkbox')) {
+        const groupIndex = e.target.dataset.groupIndex;
+        const group = RESIDENT_GROUPS[groupIndex];
+        const isChecked = e.target.checked;
+        
+        let selectedSet = new Set(getSelectedResidents());
+        group.names.forEach(name => {
+            if (isChecked) selectedSet.add(name);
+            else selectedSet.delete(name);
+        });
+        
+        setState({ residentsPresent: Array.from(selectedSet) });
+        renderResidentChecklist();
+        return;
+    }
+
+    const selected = Array.from(residentChecklist.querySelectorAll('.resident-checkbox:checked')).map((input) => input.value);
     setState({ residentsPresent: selected });
     residentSelectAll.checked = selected.length === ALL_RESIDENTS.length;
+    renderResidentChecklist();
 });
 
 residentSelectAll.addEventListener('change', () => {
@@ -388,6 +433,10 @@ document.addEventListener('keydown', (event) => {
         }
         if (!residentModal.classList.contains('hidden')) {
             closeResidentModal();
+            return;
+        }
+        if (!confirmModal.classList.contains('hidden')) {
+            closeConfirmModal();
         }
     }
 });
@@ -396,18 +445,43 @@ copyDocButton.addEventListener('click', async () => {
     try {
         await copyText(buildGoogleDocText());
         showToast('Copied G-Doc data');
+        
+        copyDocButton.classList.add('success');
+        copyDocIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+        
+        setTimeout(() => {
+            copyDocButton.classList.remove('success');
+            copyDocIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>';
+        }, 2000);
     } catch (_) {
         showToast('Copy failed');
     }
 });
 
+const closeConfirmModal = () => {
+    confirmModal.classList.add('hidden');
+    clearButton.focus();
+};
+
 clearButton.addEventListener('click', () => {
+    confirmModal.classList.remove('hidden');
+    confirmResetButton.focus();
+});
+
+confirmCancelButton.addEventListener('click', closeConfirmModal);
+
+confirmModal.addEventListener('click', (event) => {
+    if (event.target === confirmModal) closeConfirmModal();
+});
+
+confirmResetButton.addEventListener('click', () => {
     state = getInitialState();
     saveState();
     syncInputs();
     updatePickerButtons();
     renderReport();
     showToast('Form cleared');
+    closeConfirmModal();
 });
 
 syncInputs();
