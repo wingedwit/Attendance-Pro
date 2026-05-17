@@ -46,9 +46,7 @@ const upiCopyButton = document.getElementById('upiCopyButton');
 const clearButton = document.getElementById('clearButton');
 const toast = document.getElementById('toast');
 
-const confirmModal = document.getElementById('confirmModal');
-const confirmCancelButton = document.getElementById('confirmCancelButton');
-const confirmResetButton = document.getElementById('confirmResetButton');
+
 
 const residentAttendanceButton = document.getElementById('residentAttendanceButton');
 const residentAttendanceCount = document.getElementById('residentAttendanceCount');
@@ -480,9 +478,7 @@ document.addEventListener('keydown', (event) => {
             closeResidentModal();
             return;
         }
-        if (!confirmModal.classList.contains('hidden')) {
-            closeConfirmModal();
-        }
+
     }
 
     // Alt+T — jump to Topic input
@@ -521,30 +517,13 @@ copyDocButton.addEventListener('click', async () => {
     }
 });
 
-const closeConfirmModal = () => {
-    confirmModal.classList.add('hidden');
-    clearButton.focus();
-};
-
 clearButton.addEventListener('click', () => {
-    confirmModal.classList.remove('hidden');
-    confirmResetButton.focus();
-});
-
-confirmCancelButton.addEventListener('click', closeConfirmModal);
-
-confirmModal.addEventListener('click', (event) => {
-    if (event.target === confirmModal) closeConfirmModal();
-});
-
-confirmResetButton.addEventListener('click', () => {
     state = getInitialState();
     saveState();
     syncInputs();
     updatePickerButtons();
     renderReport();
     showToast('Form cleared');
-    closeConfirmModal();
 });
 
 mobileCopyButton?.addEventListener('click', async () => {
