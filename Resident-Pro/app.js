@@ -335,13 +335,23 @@ Object.entries(fields).forEach(([key, input]) => {
     input.addEventListener('change', () => setState({ [key]: input.value }));
 });
 
-datePillButtons.forEach((button) => {
+datePillButtons.forEach((button, index) => {
     button.addEventListener('click', () => {
         const date = new Date();
         date.setDate(date.getDate() + Number(button.dataset.dateOffset || 0));
         const nextDate = toLocalISODate(date);
         fields.date.value = nextDate;
         setState({ date: nextDate });
+    });
+
+    button.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+            event.preventDefault();
+            const direction = event.key === 'ArrowRight' ? 1 : -1;
+            const nextIndex = (index + direction + datePillButtons.length) % datePillButtons.length;
+            datePillButtons[nextIndex].focus();
+            datePillButtons[nextIndex].click();
+        }
     });
 });
 
@@ -431,6 +441,10 @@ pickerChecklist.addEventListener('change', (event) => {
         if (input !== target) input.checked = false;
     });
     setState({ [activePicker.stateKey]: target.checked ? target.value : '' });
+    // Auto-close single-select picker after a brief moment so the selection is visible
+    if (target.checked) {
+        setTimeout(closePickerModal, 120);
+    }
 });
 
 pickerModalClose.addEventListener('click', closePickerModal);
@@ -461,12 +475,20 @@ document.addEventListener('keydown', (event) => {
             closeConfirmModal();
         }
     }
-    
+
+    // Alt+T — jump to Topic input
+    if (event.altKey && (event.key === 't' || event.key === 'T')) {
+        event.preventDefault();
+        fields.topic.focus();
+        fields.topic.select();
+        return;
+    }
+
     if (event.ctrlKey && event.altKey && (event.key === 'c' || event.key === 'C')) {
         event.preventDefault();
         copyDocButton.click();
     }
-    
+
     if (event.ctrlKey && event.key === 'Backspace') {
         event.preventDefault();
         clearButton.click();
