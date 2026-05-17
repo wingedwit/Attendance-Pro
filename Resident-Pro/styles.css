@@ -595,6 +595,10 @@ select.form-input-m3 {
     overflow-wrap: anywhere;
 }
 
+.resident-present-card .report-value {
+    white-space: pre-wrap;
+}
+
 .topic-card .report-value {
     overflow: hidden;
     text-overflow: ellipsis;

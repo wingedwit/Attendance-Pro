@@ -159,7 +159,11 @@ const getSelectedResidents = () => (Array.isArray(state.residentsPresent) ? stat
 const displayValue = (value) => String(value ?? '').trim() || '-';
 const getResidentsPresentText = () => {
     const selected = getSelectedResidents();
-    return selected.length ? selected.join(', ') : '-';
+    const lines = RESIDENT_GROUPS.map(group => {
+        const presentInGroup = group.names.filter(name => selected.includes(name));
+        return `${group.level} - ${presentInGroup.join(', ')}`;
+    });
+    return lines.join('\n');
 };
 
 const getReportRows = () => [
@@ -225,7 +229,12 @@ const updatePickerButtons = () => {
     });
 };
 
-const buildGoogleDocText = () => getReportRows().map(([label, value]) => `${label}: ${value}`).join('\n');
+const buildGoogleDocText = () => getReportRows().map(([label, value]) => {
+    if (label === 'Resident Present') {
+        return `${label}:\n${value}`;
+    }
+    return `${label}: ${value}`;
+}).join('\n');
 
 const copyText = async (text) => {
     if (navigator.clipboard) {
