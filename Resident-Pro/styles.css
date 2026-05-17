@@ -483,8 +483,8 @@ select.form-input-m3 {
 }
 
 .header-icon-button {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.75rem;
+    height: 2.75rem;
     display: inline-grid;
     place-items: center;
     border: 1px solid var(--border);
@@ -530,11 +530,6 @@ select.form-input-m3 {
 
 .dark .download-button:hover {
     box-shadow: 0 8px 16px rgba(255, 179, 122, 0.18);
-}
-
-.download-button svg {
-    width: 1.15rem;
-    height: 1.15rem;
 }
 
 #liveReport {
