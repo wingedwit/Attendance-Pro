@@ -23,18 +23,26 @@ const SENIOR_OPTIONS = [
     'Dr. Garima'
 ];
 
+const TYPE_OPTIONS = [
+    'Group discussion',
+    'Journal club',
+    'Seminar',
+    'Practical'
+];
+
 const PRESENTER_OPTIONS = RESIDENT_GROUPS.flatMap((group) => group.names);
 const ALL_RESIDENTS = [...PRESENTER_OPTIONS];
 
 const fields = {
     date: document.getElementById('dateInput'),
-    topic: document.getElementById('topicInput'),
-    type: document.getElementById('typeInput')
+    topic: document.getElementById('topicInput')
 };
 
 const liveReport = document.getElementById('liveReport');
 const copyDocButton = document.getElementById('copyDocButton');
 const copyDocIcon = document.getElementById('copyDocIcon');
+const mobileCopyButton = document.getElementById('mobileCopyButton');
+const upiCopyButton = document.getElementById('upiCopyButton');
 const clearButton = document.getElementById('clearButton');
 const toast = document.getElementById('toast');
 
@@ -50,9 +58,11 @@ const residentClearButton = document.getElementById('residentClearButton');
 const residentDoneButton = document.getElementById('residentDoneButton');
 const residentSelectAll = document.getElementById('residentSelectAll');
 
+const typePickerButton = document.getElementById('typePickerButton');
 const presenterPickerButton = document.getElementById('presenterPickerButton');
 const seniorPickerButton = document.getElementById('seniorPickerButton');
 const moderatorPickerButton = document.getElementById('moderatorPickerButton');
+const typePickerValue = document.getElementById('typePickerValue');
 const presenterPickerValue = document.getElementById('presenterPickerValue');
 const seniorPickerValue = document.getElementById('seniorPickerValue');
 const moderatorPickerValue = document.getElementById('moderatorPickerValue');
@@ -189,6 +199,9 @@ const renderReport = (patch) => {
 };
 
 const updatePickerButtons = () => {
+    typePickerValue.textContent = state.type || '';
+    typePickerButton.classList.toggle('empty-picker', !state.type);
+
     presenterPickerValue.textContent = state.presenter || '';
     presenterPickerButton.classList.toggle('empty-picker', !state.presenter);
 
@@ -372,6 +385,15 @@ residentModal.addEventListener('click', (event) => {
     if (event.target === residentModal) closeResidentModal();
 });
 
+typePickerButton.addEventListener('click', () => {
+    openPickerModal({
+        title: 'Select Type',
+        stateKey: 'type',
+        options: TYPE_OPTIONS,
+        returnButton: typePickerButton
+    });
+});
+
 presenterPickerButton.addEventListener('click', () => {
     openPickerModal({
         title: 'Select Presenter',
@@ -439,6 +461,16 @@ document.addEventListener('keydown', (event) => {
             closeConfirmModal();
         }
     }
+    
+    if (event.ctrlKey && event.altKey && (event.key === 'c' || event.key === 'C')) {
+        event.preventDefault();
+        copyDocButton.click();
+    }
+    
+    if (event.ctrlKey && event.key === 'Backspace') {
+        event.preventDefault();
+        clearButton.click();
+    }
 });
 
 copyDocButton.addEventListener('click', async () => {
@@ -482,6 +514,20 @@ confirmResetButton.addEventListener('click', () => {
     renderReport();
     showToast('Form cleared');
     closeConfirmModal();
+});
+
+mobileCopyButton?.addEventListener('click', async () => {
+    try {
+        await copyText('8890259964');
+        showToast('Copied Mobile Number');
+    } catch (_) {}
+});
+
+upiCopyButton?.addEventListener('click', async () => {
+    try {
+        await copyText('8890259964@paytm');
+        showToast('Copied UPI ID');
+    } catch (_) {}
 });
 
 syncInputs();

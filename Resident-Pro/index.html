@@ -48,16 +48,12 @@
                         <input id="topicInput" name="topic" type="text" class="form-input-m3" placeholder="">
                     </label>
 
-                    <label class="field" style="--i:2">
+                    <div class="field" style="--i:2">
                         <span class="form-label-bold">Type</span>
-                        <select id="typeInput" name="type" class="form-input-m3">
-                            <option value="" selected hidden></option>
-                            <option value="Group discussion">Group discussion</option>
-                            <option value="Journal club">Journal club</option>
-                            <option value="Seminar">Seminar</option>
-                            <option value="Practical">Practical</option>
-                        </select>
-                    </label>
+                        <button id="typePickerButton" class="attendance-button action-btn empty-picker" type="button">
+                            <span id="typePickerValue"></span>
+                        </button>
+                    </div>
 
                     <div class="field" style="--i:3">
                         <span class="form-label-bold">Presenter</span>
@@ -92,6 +88,36 @@
 
             <footer class="developer-credit">
                 Developed by Dr. Vaibhav Meena
+                <div class="shortcut-help" title="Keyboard shortcuts">
+                    <button type="button" class="shortcut-help-btn" aria-label="Keyboard shortcuts">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4.5 5.25A2.25 2.25 0 0 0 2.25 7.5v9A2.25 2.25 0 0 0 4.5 18.75h15A2.25 2.25 0 0 0 21.75 16.5v-9A2.25 2.25 0 0 0 19.5 5.25h-15Zm-.75 2.25c0-.414.336-.75.75-.75h15c.414 0 .75.336.75.75v9a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-9Zm3.5 2a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 1.5 0v-.5a.75.75 0 0 0-.75-.75Zm3.25 0a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 1.5 0v-.5a.75.75 0 0 0-.75-.75Zm3.25 0a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 1.5 0v-.5a.75.75 0 0 0-.75-.75Zm3.25 0a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 1.5 0v-.5a.75.75 0 0 0-.75-.75ZM6.5 13a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 .75.75h11a.75.75 0 0 0 .75-.75v-.5a.75.75 0 0 0-.75-.75h-11Z"/>
+                        </svg>
+                    </button>
+                    <div class="shortcut-tooltip" role="tooltip">
+                        <p class="shortcut-tooltip-title">Keyboard shortcuts</p>
+                        <ul>
+                            <li><span>Ctrl + Alt + C</span><span>Copy G-Doc data</span></li>
+                            <li><span>Ctrl + Backspace</span><span>Reset form</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <a href="mailto:vaibhav.ganesh51@gmail.com" title="Email Developer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z" />
+                        <path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" />
+                    </svg>
+                </a>
+                <button id="mobileCopyButton" title="Copy Mobile Number" aria-label="Copy mobile number" class="shortcut-help-btn" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 2.75A2.75 2.75 0 0 0 4.25 5.5v13A2.75 2.75 0 0 0 7 21.25h10a2.75 2.75 0 0 0 2.75-2.75v-13A2.75 2.75 0 0 0 17 2.75H7zm0 1.5h10c.69 0 1.25.56 1.25 1.25v13c0 .69-.56 1.25-1.25 1.25H7c-.69 0-1.25-.56-1.25-1.25v-13c0-.69.56-1.25 1.25-1.25zm5 13.25a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/>
+                    </svg>
+                </button>
+                <button id="upiCopyButton" title="Copy UPI ID" aria-label="Copy UPI ID" class="shortcut-help-btn" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </button>
             </footer>
         </aside>
 
