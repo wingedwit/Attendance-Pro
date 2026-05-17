@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resident Pro</title>
     <meta name="theme-color" content="#1d4ed8">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231d4ed8'/%3E%3Ctext x='50%25' y='53%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial,sans-serif' font-size='34' font-weight='700' fill='white'%3ER%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="./styles.css">
     <script>
         function applySystemTheme(isDark) {
@@ -53,31 +54,37 @@
                             <option value="Group discussion">Group discussion</option>
                             <option value="Journal club">Journal club</option>
                             <option value="Seminar">Seminar</option>
+                            <option value="Practical">Practical</option>
                         </select>
                     </label>
 
-                    <label class="field">
+                    <div class="field">
                         <span class="form-label-bold">Presenter Name</span>
-                        <input id="presenterInput" name="presenter" type="text" class="form-input-m3" placeholder="">
-                    </label>
+                        <button id="presenterPickerButton" class="attendance-button action-btn" type="button">
+                            <span id="presenterPickerValue">Select presenter</span>
+                        </button>
+                    </div>
 
-                    <label class="field">
+                    <div class="field">
                         <span class="form-label-bold">Senior Resident Name</span>
-                        <input id="seniorResidentInput" name="seniorResident" type="text" class="form-input-m3" placeholder="">
-                    </label>
+                        <button id="seniorPickerButton" class="attendance-button action-btn" type="button">
+                            <span id="seniorPickerValue">Select senior resident</span>
+                        </button>
+                    </div>
 
-                    <label class="field">
+                    <div class="field">
                         <span class="form-label-bold">Moderator Name</span>
-                        <input id="moderatorInput" name="moderator" type="text" class="form-input-m3" placeholder="">
-                    </label>
+                        <button id="moderatorPickerButton" class="attendance-button action-btn" type="button">
+                            <span id="moderatorPickerValue">Select moderator</span>
+                        </button>
+                    </div>
 
                     <div class="field attendance-field">
                         <span class="form-label-bold">Resident Attendance</span>
-                        <button id="residentAttendanceButton" class="attendance-button" type="button">
+                        <button id="residentAttendanceButton" class="attendance-button action-btn" type="button">
                             <span>Select residents</span>
                             <strong id="residentAttendanceCount">0</strong>
                         </button>
-                        <div id="selectedResidentChips" class="selected-resident-chips" aria-live="polite"></div>
                     </div>
                 </form>
             </main>
@@ -88,13 +95,12 @@
         </aside>
 
         <section class="panel-shell report-shell" aria-labelledby="reportTitle">
-            <header class="report-header">
+            <header class="report-header" id="liveReportHeader">
                 <h2 id="reportTitle" class="caps-bold-heading">Live Report</h2>
-                <button id="copyDocButton" class="download-button" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
+                <button id="copyDocButton" class="download-button action-btn primary" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
                     <svg id="copyDocIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
                     </svg>
-                    <span id="copyDocLabel" class="download-label">Copy</span>
                 </button>
             </header>
 
@@ -104,23 +110,39 @@
         </section>
 
         <div id="toast" role="status" aria-live="polite"></div>
-        <div id="savedIndicator" role="status" aria-live="polite">Saved</div>
     </div>
 
     <div id="residentModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="residentModalTitle">
         <section class="modal-panel">
             <header class="modal-header">
                 <h2 id="residentModalTitle" class="caps-bold-heading">Resident Attendance</h2>
-                <button id="residentModalClose" class="header-icon-button" type="button" title="Close" aria-label="Close resident attendance">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
-                    </svg>
-                </button>
+                <label class="modal-select-all">
+                    <input id="residentSelectAll" type="checkbox">
+                    <span>Select all</span>
+                </label>
             </header>
             <div id="residentChecklist" class="resident-checklist"></div>
             <footer class="modal-footer">
                 <button id="residentClearButton" class="modal-action secondary" type="button">Clear</button>
                 <button id="residentDoneButton" class="modal-action primary" type="button">Done</button>
+            </footer>
+        </section>
+    </div>
+
+    <div id="pickerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="pickerModalTitle">
+        <section class="modal-panel">
+            <header class="modal-header">
+                <h2 id="pickerModalTitle" class="caps-bold-heading">Select</h2>
+                <button id="pickerModalClose" class="header-icon-button" type="button" title="Close" aria-label="Close picker">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </header>
+            <div id="pickerChecklist" class="picker-checklist"></div>
+            <footer class="modal-footer">
+                <button id="pickerClearButton" class="modal-action secondary" type="button">Clear</button>
+                <button id="pickerDoneButton" class="modal-action primary" type="button">Done</button>
             </footer>
         </section>
     </div>

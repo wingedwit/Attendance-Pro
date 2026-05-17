@@ -1,62 +1,83 @@
 const STORAGE_KEY = 'residentProData';
 
+const RESIDENT_GROUPS = [
+    { level: 'JR1', names: ['Dr. Prabhav', 'Dr. Muskan', 'Dr. Jyotsna', 'Dr. Mukesh'] },
+    { level: 'JR2', names: ['Dr. Naresh', 'Dr. Vaibhav', 'Dr. Shivangi', 'Dr. Zahid'] },
+    { level: 'JR3', names: ['Dr. Saumya', 'Dr. Malhar', 'Dr. Anurag', 'Dr. Danish', 'Dr. Snigdha'] }
+];
+
+const MODERATOR_OPTIONS = [
+    'Dr. Arpita Singh',
+    'Dr. Pooja Shukla',
+    'Dr. Himanshu Sharma',
+    'Dr. Garima Adhaulia',
+    'Dr. Govind Mishra',
+    'Dr. Parul Kamal'
+];
+
+const SENIOR_OPTIONS = [
+    'Dr. Harshika',
+    'Dr. Anjali',
+    'Dr. Vishakha',
+    'Dr. Punit',
+    'Dr. Garima'
+];
+
+const PRESENTER_OPTIONS = RESIDENT_GROUPS.flatMap((group) => group.names);
+
 const fields = {
     date: document.getElementById('dateInput'),
     topic: document.getElementById('topicInput'),
-    type: document.getElementById('typeInput'),
-    presenter: document.getElementById('presenterInput'),
-    seniorResident: document.getElementById('seniorResidentInput'),
-    moderator: document.getElementById('moderatorInput')
+    type: document.getElementById('typeInput')
 };
-
-const RESIDENT_GROUPS = [
-    {
-        level: 'JR1',
-        names: ['Dr. Prabhav', 'Dr. Muskan', 'Dr. Jyotsna', 'Dr. Mukesh']
-    },
-    {
-        level: 'JR2',
-        names: ['Dr. Naresh', 'Dr. Vaibhav', 'Dr. Shivangi', 'Dr. Zahid']
-    },
-    {
-        level: 'JR3',
-        names: ['Dr. Saumya', 'Dr. Malhar', 'Dr. Anurag', 'Dr. Danish', 'Dr. Snigdha']
-    }
-];
 
 const liveReport = document.getElementById('liveReport');
 const copyDocButton = document.getElementById('copyDocButton');
-const copyDocLabel = document.getElementById('copyDocLabel');
-const copyDocIcon = document.getElementById('copyDocIcon');
 const clearButton = document.getElementById('clearButton');
+const toast = document.getElementById('toast');
+
 const residentAttendanceButton = document.getElementById('residentAttendanceButton');
 const residentAttendanceCount = document.getElementById('residentAttendanceCount');
-const selectedResidentChips = document.getElementById('selectedResidentChips');
 const residentModal = document.getElementById('residentModal');
 const residentChecklist = document.getElementById('residentChecklist');
-const residentModalClose = document.getElementById('residentModalClose');
 const residentClearButton = document.getElementById('residentClearButton');
 const residentDoneButton = document.getElementById('residentDoneButton');
+const residentSelectAll = document.getElementById('residentSelectAll');
+
+const presenterPickerButton = document.getElementById('presenterPickerButton');
+const seniorPickerButton = document.getElementById('seniorPickerButton');
+const moderatorPickerButton = document.getElementById('moderatorPickerButton');
+const presenterPickerValue = document.getElementById('presenterPickerValue');
+const seniorPickerValue = document.getElementById('seniorPickerValue');
+const moderatorPickerValue = document.getElementById('moderatorPickerValue');
+
+const pickerModal = document.getElementById('pickerModal');
+const pickerModalTitle = document.getElementById('pickerModalTitle');
+const pickerChecklist = document.getElementById('pickerChecklist');
+const pickerModalClose = document.getElementById('pickerModalClose');
+const pickerClearButton = document.getElementById('pickerClearButton');
+const pickerDoneButton = document.getElementById('pickerDoneButton');
+
 const datePillButtons = Array.from(document.querySelectorAll('[data-date-offset]'));
-const toast = document.getElementById('toast');
-const savedIndicator = document.getElementById('savedIndicator');
 
 let toastTimer = null;
-let savedTimer = null;
-let copyLabelTimer = null;
+let activePicker = null;
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const toLocalISODate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const todayISO = () => toLocalISODate(new Date());
 
 if (window.matchMedia) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     applySystemTheme(mediaQuery.matches);
-
     const handleThemeChange = (event) => applySystemTheme(event.matches);
-    if (typeof mediaQuery.addEventListener === 'function') {
-        mediaQuery.addEventListener('change', handleThemeChange);
-    } else if (typeof mediaQuery.addListener === 'function') {
-        mediaQuery.addListener(handleThemeChange);
-    }
+    if (typeof mediaQuery.addEventListener === 'function') mediaQuery.addEventListener('change', handleThemeChange);
+    else if (typeof mediaQuery.addListener === 'function') mediaQuery.addListener(handleThemeChange);
 }
 
 const getInitialState = () => ({
@@ -96,7 +117,7 @@ const showToast = (message) => {
     toastTimer = setTimeout(() => {
         toast.classList.remove('show');
         toastTimer = null;
-    }, 2200);
+    }, 1800);
 };
 
 const loadState = () => {
@@ -113,37 +134,45 @@ let state = loadState();
 const saveState = () => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        savedIndicator.classList.add('show');
-        if (savedTimer) clearTimeout(savedTimer);
-        savedTimer = setTimeout(() => {
-            savedIndicator.classList.remove('show');
-            savedTimer = null;
-        }, 1200);
     } catch (_) {
-        // The live report still works if storage is unavailable.
+        // Keep functional even if storage is blocked.
     }
+};
+
+const getSelectedResidents = () => (Array.isArray(state.residentsPresent) ? state.residentsPresent : []);
+const getResidentsPresentText = () => {
+    const selected = getSelectedResidents();
+    return selected.length ? selected.join(', ') : '-';
 };
 
 const getReportRows = () => [
     ['Date', formatDate(state.date)],
     ['Topic', state.topic || '-'],
     ['Type', state.type || '-'],
-    ['Presenter Name', state.presenter || '-'],
-    ['Senior Resident Name', state.seniorResident || '-'],
-    ['Moderator Name', state.moderator || '-'],
+    ['Presenter', state.presenter || '-'],
+    ['Senior Resident', state.seniorResident || '-'],
+    ['Moderator', state.moderator || '-'],
     ['Resident Present', getResidentsPresentText()]
 ];
 
-const getGoogleDocLines = () => getReportRows().map(([label, value]) => `${label}: ${value}`);
+const renderReport = () => {
+    liveReport.innerHTML = `
+        <div class="report-block">
+            ${getReportRows().map(([label, value]) => `
+                <div class="report-card${label === 'Topic' || label === 'Resident Present' ? ' wide-card' : ''}">
+                    <p class="report-label">${escapeHtml(label)}</p>
+                    <p class="report-value">${escapeHtml(value)}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+};
 
-const getSelectedResidents = () => Array.isArray(state.residentsPresent) ? state.residentsPresent : [];
+const updatePickerButtons = () => {
+    presenterPickerValue.textContent = state.presenter || 'Select presenter';
+    seniorPickerValue.textContent = state.seniorResident || 'Select senior resident';
+    moderatorPickerValue.textContent = state.moderator || 'Select moderator';
 
-function getResidentsPresentText() {
-    const selected = getSelectedResidents();
-    return selected.length ? selected.join(', ') : '-';
-}
-
-const updateResidentAttendanceButton = () => {
     const selectedCount = getSelectedResidents().length;
     residentAttendanceCount.textContent = String(selectedCount);
     residentAttendanceButton.querySelector('span').textContent = selectedCount
@@ -151,38 +180,13 @@ const updateResidentAttendanceButton = () => {
         : 'Select residents';
 };
 
-const renderResidentChips = () => {
-    const selected = getSelectedResidents();
-    selectedResidentChips.innerHTML = selected.length
-        ? selected.map((name) => `<span class="resident-chip">${escapeHtml(name)}</span>`).join('')
-        : '<span class="resident-chip empty">No residents selected</span>';
-};
-
-const renderReport = () => {
-    updateResidentAttendanceButton();
-    renderResidentChips();
-    liveReport.innerHTML = `
-        <div class="doc-preview">
-            ${getReportRows().map(([label, value]) => `
-                <p class="doc-line${label === 'Topic' ? ' topic-line' : ''}">
-                    <span class="doc-label">${escapeHtml(label)}:</span>
-                    <span class="doc-value">${escapeHtml(value)}</span>
-                </p>
-            `).join('')}
-        </div>
-    `;
-};
-
-const buildGoogleDocText = () => {
-    return getGoogleDocLines().join('\n');
-};
+const buildGoogleDocText = () => getReportRows().map(([label, value]) => `${label}: ${value}`).join('\n');
 
 const copyText = async (text) => {
     if (navigator.clipboard) {
         await navigator.clipboard.writeText(text);
         return;
     }
-
     const textArea = document.createElement('textarea');
     textArea.value = text;
     textArea.style.position = 'fixed';
@@ -200,24 +204,27 @@ const syncInputs = () => {
     });
 };
 
+const setState = (patch) => {
+    state = { ...state, ...patch };
+    saveState();
+    updatePickerButtons();
+    renderReport();
+};
+
 const renderResidentChecklist = () => {
-    const selected = new Set(getSelectedResidents());
+    const selectedSet = new Set(getSelectedResidents());
     residentChecklist.innerHTML = RESIDENT_GROUPS.map((group) => `
         <section class="resident-group">
             <h3 class="resident-group-title">${escapeHtml(group.level)}</h3>
             ${group.names.map((name) => `
                 <label class="resident-option">
-                    <input type="checkbox" value="${escapeHtml(name)}" ${selected.has(name) ? 'checked' : ''}>
+                    <input type="checkbox" value="${escapeHtml(name)}" ${selectedSet.has(name) ? 'checked' : ''}>
                     <span>${escapeHtml(name)}</span>
                 </label>
             `).join('')}
         </section>
     `).join('');
-};
-
-const setResidentsPresent = (residentsPresent) => {
-    setState({ residentsPresent });
-    renderResidentChecklist();
+    residentSelectAll.checked = getSelectedResidents().length === PRESENTER_OPTIONS.length;
 };
 
 const openResidentModal = () => {
@@ -232,10 +239,38 @@ const closeResidentModal = () => {
     residentAttendanceButton.focus();
 };
 
-const setState = (patch) => {
-    state = { ...state, ...patch };
-    saveState();
-    renderReport();
+const openPickerModal = (config) => {
+    activePicker = config;
+    pickerModalTitle.textContent = config.title;
+    const selectedValue = String(state[config.stateKey] || '');
+    pickerChecklist.classList.toggle('grouped-checklist', Boolean(config.groups));
+    pickerChecklist.innerHTML = config.groups
+        ? config.groups.map((group) => `
+            <section class="resident-group">
+                <h3 class="resident-group-title">${escapeHtml(group.level)}</h3>
+                ${group.names.map((name) => `
+                    <label class="resident-option">
+                        <input type="checkbox" value="${escapeHtml(name)}" ${selectedValue === name ? 'checked' : ''}>
+                        <span>${escapeHtml(name)}</span>
+                    </label>
+                `).join('')}
+            </section>
+        `).join('')
+        : config.options.map((name) => `
+            <label class="resident-option">
+                <input type="checkbox" value="${escapeHtml(name)}" ${selectedValue === name ? 'checked' : ''}>
+                <span>${escapeHtml(name)}</span>
+            </label>
+        `).join('');
+    pickerModal.classList.remove('hidden');
+    const firstCheckbox = pickerChecklist.querySelector('input[type="checkbox"]');
+    if (firstCheckbox) firstCheckbox.focus();
+};
+
+const closePickerModal = () => {
+    pickerModal.classList.add('hidden');
+    if (activePicker && activePicker.returnButton) activePicker.returnButton.focus();
+    activePicker = null;
 };
 
 Object.entries(fields).forEach(([key, input]) => {
@@ -247,56 +282,106 @@ datePillButtons.forEach((button) => {
     button.addEventListener('click', () => {
         const date = new Date();
         date.setDate(date.getDate() + Number(button.dataset.dateOffset || 0));
-        const nextDate = date.toISOString().slice(0, 10);
+        const nextDate = toLocalISODate(date);
         fields.date.value = nextDate;
         setState({ date: nextDate });
     });
 });
 
 residentAttendanceButton.addEventListener('click', openResidentModal);
-residentModalClose.addEventListener('click', closeResidentModal);
 residentDoneButton.addEventListener('click', closeResidentModal);
-residentClearButton.addEventListener('click', () => setResidentsPresent([]));
+residentClearButton.addEventListener('click', () => {
+    setState({ residentsPresent: [] });
+    renderResidentChecklist();
+});
 
 residentChecklist.addEventListener('change', () => {
-    const selected = Array.from(residentChecklist.querySelectorAll('input[type="checkbox"]:checked'))
-        .map((input) => input.value);
+    const selected = Array.from(residentChecklist.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
     setState({ residentsPresent: selected });
+    residentSelectAll.checked = selected.length === PRESENTER_OPTIONS.length;
+});
+
+residentSelectAll.addEventListener('change', () => {
+    const next = residentSelectAll.checked ? [...PRESENTER_OPTIONS] : [];
+    setState({ residentsPresent: next });
+    renderResidentChecklist();
 });
 
 residentModal.addEventListener('click', (event) => {
     if (event.target === residentModal) closeResidentModal();
 });
 
+presenterPickerButton.addEventListener('click', () => {
+    openPickerModal({
+        title: 'Select Presenter',
+        stateKey: 'presenter',
+        options: PRESENTER_OPTIONS,
+        groups: RESIDENT_GROUPS,
+        returnButton: presenterPickerButton
+    });
+});
+
+seniorPickerButton.addEventListener('click', () => {
+    openPickerModal({
+        title: 'Select Senior Resident',
+        stateKey: 'seniorResident',
+        options: SENIOR_OPTIONS,
+        returnButton: seniorPickerButton
+    });
+});
+
+moderatorPickerButton.addEventListener('click', () => {
+    openPickerModal({
+        title: 'Select Moderator',
+        stateKey: 'moderator',
+        options: MODERATOR_OPTIONS,
+        returnButton: moderatorPickerButton
+    });
+});
+
+pickerChecklist.addEventListener('change', (event) => {
+    if (!activePicker) return;
+    const target = event.target;
+    if (!target || target.type !== 'checkbox') return;
+    const checkboxes = Array.from(pickerChecklist.querySelectorAll('input[type="checkbox"]'));
+    checkboxes.forEach((input) => {
+        if (input !== target) input.checked = false;
+    });
+    setState({ [activePicker.stateKey]: target.checked ? target.value : '' });
+});
+
+pickerModalClose.addEventListener('click', closePickerModal);
+pickerDoneButton.addEventListener('click', closePickerModal);
+pickerClearButton.addEventListener('click', () => {
+    if (!activePicker) return;
+    setState({ [activePicker.stateKey]: '' });
+    pickerChecklist.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+        input.checked = false;
+    });
+});
+
+pickerModal.addEventListener('click', (event) => {
+    if (event.target === pickerModal) closePickerModal();
+});
+
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !residentModal.classList.contains('hidden')) {
-        closeResidentModal();
+    if (event.key === 'Escape') {
+        if (!pickerModal.classList.contains('hidden')) {
+            closePickerModal();
+            return;
+        }
+        if (!residentModal.classList.contains('hidden')) {
+            closeResidentModal();
+        }
     }
 });
 
 copyDocButton.addEventListener('click', async () => {
     try {
         await copyText(buildGoogleDocText());
-        copyDocButton.classList.add('copied');
-        copyDocLabel.textContent = 'Copied';
-        copyDocIcon.classList.add('hidden');
-        if (copyLabelTimer) clearTimeout(copyLabelTimer);
-        copyLabelTimer = setTimeout(() => {
-            copyDocButton.classList.remove('copied');
-            copyDocLabel.textContent = 'Copy';
-            copyDocIcon.classList.remove('hidden');
-            copyLabelTimer = null;
-        }, 1200);
         showToast('Copied G-Doc data');
     } catch (_) {
         showToast('Copy failed');
-    }
-});
-
-document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Enter') {
-        event.preventDefault();
-        copyDocButton.click();
     }
 });
 
@@ -304,9 +389,11 @@ clearButton.addEventListener('click', () => {
     state = getInitialState();
     saveState();
     syncInputs();
+    updatePickerButtons();
     renderReport();
     showToast('Form cleared');
 });
 
 syncInputs();
+updatePickerButtons();
 renderReport();
