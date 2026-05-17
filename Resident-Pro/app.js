@@ -26,9 +26,12 @@ const RESIDENT_GROUPS = [
 
 const liveReport = document.getElementById('liveReport');
 const copyDocButton = document.getElementById('copyDocButton');
+const copyDocLabel = document.getElementById('copyDocLabel');
+const copyDocIcon = document.getElementById('copyDocIcon');
 const clearButton = document.getElementById('clearButton');
 const residentAttendanceButton = document.getElementById('residentAttendanceButton');
 const residentAttendanceCount = document.getElementById('residentAttendanceCount');
+const selectedResidentChips = document.getElementById('selectedResidentChips');
 const residentModal = document.getElementById('residentModal');
 const residentChecklist = document.getElementById('residentChecklist');
 const residentModalClose = document.getElementById('residentModalClose');
@@ -40,6 +43,7 @@ const savedIndicator = document.getElementById('savedIndicator');
 
 let toastTimer = null;
 let savedTimer = null;
+let copyLabelTimer = null;
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -130,6 +134,8 @@ const getReportRows = () => [
     ['Resident Present', getResidentsPresentText()]
 ];
 
+const getGoogleDocLines = () => getReportRows().map(([label, value]) => `${label}: ${value}`);
+
 const getSelectedResidents = () => Array.isArray(state.residentsPresent) ? state.residentsPresent : [];
 
 function getResidentsPresentText() {
@@ -145,23 +151,30 @@ const updateResidentAttendanceButton = () => {
         : 'Select residents';
 };
 
+const renderResidentChips = () => {
+    const selected = getSelectedResidents();
+    selectedResidentChips.innerHTML = selected.length
+        ? selected.map((name) => `<span class="resident-chip">${escapeHtml(name)}</span>`).join('')
+        : '<span class="resident-chip empty">No residents selected</span>';
+};
+
 const renderReport = () => {
     updateResidentAttendanceButton();
+    renderResidentChips();
     liveReport.innerHTML = `
-        <div class="report-block">
+        <div class="doc-preview">
             ${getReportRows().map(([label, value]) => `
-                <div class="report-card${label === 'Topic' || label === 'Resident Present' ? ' wide-card' : ''}">
-                    <p class="report-label">${escapeHtml(label)}</p>
-                    <p class="report-value">${escapeHtml(value)}</p>
-                </div>
+                <p class="doc-line${label === 'Topic' ? ' topic-line' : ''}">
+                    <span class="doc-label">${escapeHtml(label)}:</span>
+                    <span class="doc-value">${escapeHtml(value)}</span>
+                </p>
             `).join('')}
         </div>
     `;
 };
 
 const buildGoogleDocText = () => {
-    const rows = getReportRows();
-    return rows.map(([label, value]) => `${label}: ${value}`).join('\n');
+    return getGoogleDocLines().join('\n');
 };
 
 const copyText = async (text) => {
@@ -264,9 +277,26 @@ document.addEventListener('keydown', (event) => {
 copyDocButton.addEventListener('click', async () => {
     try {
         await copyText(buildGoogleDocText());
+        copyDocButton.classList.add('copied');
+        copyDocLabel.textContent = 'Copied';
+        copyDocIcon.classList.add('hidden');
+        if (copyLabelTimer) clearTimeout(copyLabelTimer);
+        copyLabelTimer = setTimeout(() => {
+            copyDocButton.classList.remove('copied');
+            copyDocLabel.textContent = 'Copy';
+            copyDocIcon.classList.remove('hidden');
+            copyLabelTimer = null;
+        }, 1200);
         showToast('Copied G-Doc data');
     } catch (_) {
         showToast('Copy failed');
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Enter') {
+        event.preventDefault();
+        copyDocButton.click();
     }
 });
 

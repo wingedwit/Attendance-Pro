@@ -90,7 +90,6 @@ button {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    width: 50%;
     height: 100%;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.45);
@@ -99,6 +98,14 @@ button {
     box-shadow: 0 16px 36px rgba(23, 64, 129, 0.1);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+}
+
+.input-shell {
+    flex: 0 0 44%;
+}
+
+.report-shell {
+    flex: 1 1 56%;
 }
 
 .dark .panel-shell {
@@ -254,6 +261,10 @@ button {
     box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.12);
 }
 
+#topicInput {
+    font-weight: 650;
+}
+
 .dark .form-input-m3:focus {
     border-color: var(--primary-dark);
     background-color: rgba(45, 54, 70, 0.95);
@@ -295,12 +306,14 @@ button {
 }
 
 .download-button {
-    width: 2.75rem;
+    min-width: 6.4rem;
     height: 2.75rem;
-    padding: 0;
+    gap: 0.45rem;
+    padding: 0 1rem;
     border-radius: 999px;
     color: #ffffff;
     background-color: var(--secondary-light);
+    font-weight: 800;
 }
 
 .dark .download-button {
@@ -311,6 +324,19 @@ button {
 .download-button svg {
     width: 1.15rem;
     height: 1.15rem;
+}
+
+.download-label {
+    font-size: 0.82rem;
+}
+
+.download-button.copied {
+    background-color: #16a34a;
+}
+
+.dark .download-button.copied {
+    color: #052e16;
+    background-color: var(--success-dark);
 }
 
 .download-button:hover {
@@ -367,6 +393,43 @@ button {
     background-color: var(--primary-dark);
 }
 
+.selected-resident-chips {
+    min-height: 2.15rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+}
+
+.resident-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    border: 1px solid rgba(23, 105, 255, 0.16);
+    border-radius: 999px;
+    padding: 0 0.65rem;
+    color: var(--primary-light);
+    background-color: rgba(23, 105, 255, 0.1);
+    font-size: 0.75rem;
+    font-weight: 750;
+}
+
+.resident-chip.empty {
+    color: var(--on-surface-variant-light);
+    background-color: transparent;
+}
+
+.dark .resident-chip {
+    border-color: rgba(102, 163, 255, 0.22);
+    color: var(--primary-dark);
+    background-color: rgba(102, 163, 255, 0.12);
+}
+
+.dark .resident-chip.empty {
+    color: var(--on-surface-variant-dark);
+    background-color: transparent;
+}
+
 .dark .download-button:hover {
     box-shadow: 0 8px 16px rgba(255, 179, 122, 0.18);
 }
@@ -375,47 +438,58 @@ button {
     min-height: 100%;
 }
 
-.report-block {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-}
-
-.report-card {
+.doc-preview {
+    min-height: 100%;
     border: 1px solid rgba(255, 255, 255, 0.45);
-    border-radius: 1rem;
-    padding: 1rem;
-    background-color: var(--surface-light);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.72);
     box-shadow: 0 10px 24px rgba(23, 64, 129, 0.08);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.wide-card {
-    grid-column: 1 / -1;
-}
-
-.dark .report-card {
+.dark .doc-preview {
     border-color: rgba(132, 151, 184, 0.24);
-    background-color: var(--surface-dark);
+    background-color: rgba(8, 11, 16, 0.82);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
 }
 
-.report-label {
-    margin: 0 0 0.3rem;
-    font-size: 0.76rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.78;
+.doc-line {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0.52rem 0;
+    border-bottom: 1px solid rgba(23, 64, 129, 0.1);
 }
 
-.report-value {
-    margin: 0;
+.doc-line:last-child {
+    border-bottom: 0;
+}
+
+.dark .doc-line {
+    border-bottom-color: rgba(132, 151, 184, 0.14);
+}
+
+.doc-label {
+    color: var(--on-surface-variant-light);
+    font-weight: 800;
+}
+
+.dark .doc-label {
+    color: var(--on-surface-variant-dark);
+}
+
+.doc-value {
     font-size: 1rem;
     line-height: 1.45;
     font-weight: 650;
     overflow-wrap: anywhere;
+}
+
+.topic-line .doc-value {
+    font-weight: 750;
 }
 
 .developer-credit {

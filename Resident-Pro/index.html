@@ -77,6 +77,7 @@
                             <span>Select residents</span>
                             <strong id="residentAttendanceCount">0</strong>
                         </button>
+                        <div id="selectedResidentChips" class="selected-resident-chips" aria-live="polite"></div>
                     </div>
                 </form>
             </main>
@@ -90,9 +91,10 @@
             <header class="report-header">
                 <h2 id="reportTitle" class="caps-bold-heading">Live Report</h2>
                 <button id="copyDocButton" class="download-button" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg id="copyDocIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
                     </svg>
+                    <span id="copyDocLabel" class="download-label">Copy</span>
                 </button>
             </header>
 
