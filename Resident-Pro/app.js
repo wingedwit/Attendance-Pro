@@ -24,6 +24,7 @@ const SENIOR_OPTIONS = [
 ];
 
 const PRESENTER_OPTIONS = RESIDENT_GROUPS.flatMap((group) => group.names);
+const ALL_RESIDENTS = [...PRESENTER_OPTIONS];
 
 const fields = {
     date: document.getElementById('dateInput'),
@@ -140,6 +141,7 @@ const saveState = () => {
 };
 
 const getSelectedResidents = () => (Array.isArray(state.residentsPresent) ? state.residentsPresent : []);
+const displayValue = (value) => String(value ?? '').trim() || '-';
 const getResidentsPresentText = () => {
     const selected = getSelectedResidents();
     return selected.length ? selected.join(', ') : '-';
@@ -147,19 +149,24 @@ const getResidentsPresentText = () => {
 
 const getReportRows = () => [
     ['Date', formatDate(state.date)],
-    ['Topic', state.topic || '-'],
-    ['Type', state.type || '-'],
-    ['Presenter', state.presenter || '-'],
-    ['Senior Resident', state.seniorResident || '-'],
-    ['Moderator', state.moderator || '-'],
+    ['Topic', displayValue(state.topic)],
+    ['Type', displayValue(state.type)],
+    ['Presenter', displayValue(state.presenter)],
+    ['Senior Resident', displayValue(state.seniorResident)],
+    ['Moderator', displayValue(state.moderator)],
     ['Resident Present', getResidentsPresentText()]
 ];
+
+const getReportCardClass = (label) => {
+    const wideClass = label === 'Topic' || label === 'Resident Present' ? ' wide-card' : '';
+    return `report-card ${label.toLowerCase().replace(/\s+/g, '-')}-card${wideClass}`;
+};
 
 const renderReport = () => {
     liveReport.innerHTML = `
         <div class="report-block">
             ${getReportRows().map(([label, value]) => `
-                <div class="report-card${label === 'Topic' || label === 'Resident Present' ? ' wide-card' : ''}">
+                <div class="${getReportCardClass(label)}">
                     <p class="report-label">${escapeHtml(label)}</p>
                     <p class="report-value">${escapeHtml(value)}</p>
                 </div>
@@ -178,6 +185,12 @@ const updatePickerButtons = () => {
     residentAttendanceButton.querySelector('span').textContent = selectedCount
         ? `${selectedCount} resident${selectedCount === 1 ? '' : 's'} selected`
         : 'Select residents';
+
+    datePillButtons.forEach((button) => {
+        const date = new Date();
+        date.setDate(date.getDate() + Number(button.dataset.dateOffset || 0));
+        button.classList.toggle('active', state.date === toLocalISODate(date));
+    });
 };
 
 const buildGoogleDocText = () => getReportRows().map(([label, value]) => `${label}: ${value}`).join('\n');
@@ -192,10 +205,13 @@ const copyText = async (text) => {
     textArea.style.position = 'fixed';
     textArea.style.left = '-9999px';
     document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
+    try {
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+    } finally {
+        document.body.removeChild(textArea);
+    }
 };
 
 const syncInputs = () => {
@@ -224,7 +240,7 @@ const renderResidentChecklist = () => {
             `).join('')}
         </section>
     `).join('');
-    residentSelectAll.checked = getSelectedResidents().length === PRESENTER_OPTIONS.length;
+    residentSelectAll.checked = getSelectedResidents().length === ALL_RESIDENTS.length;
 };
 
 const openResidentModal = () => {
@@ -298,11 +314,11 @@ residentClearButton.addEventListener('click', () => {
 residentChecklist.addEventListener('change', () => {
     const selected = Array.from(residentChecklist.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
     setState({ residentsPresent: selected });
-    residentSelectAll.checked = selected.length === PRESENTER_OPTIONS.length;
+    residentSelectAll.checked = selected.length === ALL_RESIDENTS.length;
 });
 
 residentSelectAll.addEventListener('change', () => {
-    const next = residentSelectAll.checked ? [...PRESENTER_OPTIONS] : [];
+    const next = residentSelectAll.checked ? [...ALL_RESIDENTS] : [];
     setState({ residentsPresent: next });
     renderResidentChecklist();
 });
