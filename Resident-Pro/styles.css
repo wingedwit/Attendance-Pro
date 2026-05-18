@@ -827,6 +827,14 @@ select.form-input-m3 {
     border-color: var(--border-strong);
 }
 
+/* Disabled picker styles */
+.attendance-button:disabled,
+.attendance-button.disabled-picker {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none !important;
+}
+
 /* Entrance animation */
 .entrance-animate .field {
     animation: slideFadeIn 0.4s ease-out forwards;

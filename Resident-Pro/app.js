@@ -191,7 +191,11 @@ const showToast = (message) => {
 const loadState = () => {
     try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        return { ...getInitialState(), ...(saved || {}) };
+        const loaded = { ...getInitialState(), ...(saved || {}) };
+        if (loaded.type === 'Practical') {
+            loaded.presenter = '';
+        }
+        return loaded;
     } catch (_) {
         return getInitialState();
     }
@@ -222,7 +226,7 @@ const getReportRows = () => [
     ['Date', formatDate(state.date)],
     ['Topic', displayValue(state.topic)],
     ['Type', displayValue(state.type)],
-    ['Presenter', displayValue(state.presenter)],
+    ['Presenter', state.type === 'Practical' ? 'N/A' : displayValue(state.presenter)],
     ['Senior Resident', displayValue(state.seniorResident)],
     ['Moderator', displayValue(state.moderator)],
     ['Resident Present', getResidentsPresentText()]
@@ -258,8 +262,17 @@ const updatePickerButtons = () => {
     typePickerValue.textContent = state.type || '';
     typePickerButton.classList.toggle('empty-picker', !state.type);
 
-    presenterPickerValue.textContent = state.presenter || '';
-    presenterPickerButton.classList.toggle('empty-picker', !state.presenter);
+    const isPractical = state.type === 'Practical';
+    presenterPickerButton.disabled = isPractical;
+    if (isPractical) {
+        presenterPickerValue.textContent = 'N/A';
+        presenterPickerButton.classList.remove('empty-picker');
+        presenterPickerButton.classList.add('disabled-picker');
+    } else {
+        presenterPickerValue.textContent = state.presenter || '';
+        presenterPickerButton.classList.remove('disabled-picker');
+        presenterPickerButton.classList.toggle('empty-picker', !state.presenter);
+    }
 
     seniorPickerValue.textContent = state.seniorResident || '';
     seniorPickerButton.classList.toggle('empty-picker', !state.seniorResident);
@@ -317,7 +330,11 @@ const syncInputs = () => {
 };
 
 const setState = (patch) => {
-    state = { ...state, ...patch };
+    let nextState = { ...state, ...patch };
+    if (nextState.type === 'Practical') {
+        nextState.presenter = '';
+    }
+    state = nextState;
     saveState();
     updatePickerButtons();
     renderReport(patch);
