@@ -367,15 +367,30 @@ const renderResidentChecklist = () => {
     residentSelectAll.checked = getSelectedResidents().length === ALL_RESIDENTS.length;
 };
 
+let navIndex = -1;
+
+const updateVimFocus = (options) => {
+    options.forEach((el, index) => {
+        el.classList.toggle('focused-nav', index === navIndex);
+        if (index === navIndex) {
+            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            const input = el.querySelector('input');
+            if (input) input.focus();
+        }
+    });
+};
+
 const openResidentModal = () => {
     renderResidentChecklist();
     residentModal.classList.remove('hidden');
-    const firstCheckbox = residentChecklist.querySelector('input[type="checkbox"]');
-    if (firstCheckbox) firstCheckbox.focus();
+    navIndex = 0;
+    const options = Array.from(residentChecklist.querySelectorAll('.resident-option'));
+    updateVimFocus(options);
 };
 
 const closeResidentModal = () => {
     residentModal.classList.add('hidden');
+    navIndex = -1;
     residentAttendanceButton.focus();
 };
 
@@ -403,12 +418,14 @@ const openPickerModal = (config) => {
             </label>
         `).join('');
     pickerModal.classList.remove('hidden');
-    const firstCheckbox = pickerChecklist.querySelector('input[type="checkbox"]');
-    if (firstCheckbox) firstCheckbox.focus();
+    navIndex = 0;
+    const options = Array.from(pickerChecklist.querySelectorAll('.resident-option'));
+    updateVimFocus(options);
 };
 
 const closePickerModal = () => {
     pickerModal.classList.add('hidden');
+    navIndex = -1;
     if (activePicker && activePicker.returnButton) activePicker.returnButton.focus();
     activePicker = null;
 };
@@ -559,7 +576,113 @@ pickerModal.addEventListener('click', (event) => {
     if (event.target === pickerModal) closePickerModal();
 });
 
+const handleVimNavigation = (event) => {
+    const isResidentOpen = !residentModal.classList.contains('hidden');
+    const isPickerOpen = !pickerModal.classList.contains('hidden');
+    if (!isResidentOpen && !isPickerOpen) return;
+
+    const activeContainer = isResidentOpen ? residentChecklist : pickerChecklist;
+    const options = Array.from(activeContainer.querySelectorAll('.resident-option'));
+    if (options.length === 0) return;
+
+    const key = event.key.toLowerCase();
+    
+    if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') {
+        return; 
+    }
+
+    let cols = 3;
+    if (isPickerOpen) {
+        cols = pickerChecklist.classList.contains('grouped-checklist') ? 3 : 2;
+    }
+
+    let handled = true;
+
+    switch (key) {
+        case 'j': 
+        case 'arrowdown':
+            if (navIndex === -1) {
+                navIndex = 0;
+            } else {
+                navIndex = Math.min(navIndex + cols, options.length - 1);
+            }
+            updateVimFocus(options);
+            break;
+            
+        case 'k': 
+        case 'arrowup':
+            if (navIndex === -1) {
+                navIndex = 0;
+            } else {
+                navIndex = Math.max(navIndex - cols, 0);
+            }
+            updateVimFocus(options);
+            break;
+            
+        case 'h': 
+        case 'arrowleft':
+            if (navIndex === -1) {
+                navIndex = 0;
+            } else {
+                navIndex = Math.max(navIndex - 1, 0);
+            }
+            updateVimFocus(options);
+            break;
+            
+        case 'l': 
+        case 'arrowright':
+            if (navIndex === -1) {
+                navIndex = 0;
+            } else {
+                navIndex = Math.min(navIndex + 1, options.length - 1);
+            }
+            updateVimFocus(options);
+            break;
+
+        case ' ': 
+            if (navIndex >= 0 && navIndex < options.length) {
+                const checkbox = options[navIndex].querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+            break;
+
+        case 'v': 
+            if (isResidentOpen && navIndex >= 0 && navIndex < options.length) {
+                const groupEl = options[navIndex].closest('.resident-group');
+                if (groupEl) {
+                    const groupCheckbox = groupEl.querySelector('.group-checkbox');
+                    if (groupCheckbox) {
+                        groupCheckbox.checked = !groupCheckbox.checked;
+                        groupCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            }
+            break;
+
+        case 'enter': 
+            if (isResidentOpen) {
+                residentDoneButton.click();
+            } else if (isPickerOpen) {
+                pickerDoneButton.click();
+            }
+            break;
+
+        default:
+            handled = false;
+            break;
+    }
+
+    if (handled) {
+        event.preventDefault();
+    }
+};
+
 document.addEventListener('keydown', (event) => {
+    handleVimNavigation(event);
+
     if (event.key === 'Escape') {
         if (!pickerModal.classList.contains('hidden')) {
             closePickerModal();
