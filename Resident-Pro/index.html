@@ -6,12 +6,25 @@
     <title>Resident Pro</title>
     <meta name="theme-color" content="#1d4ed8">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231d4ed8'/%3E%3Ctext x='50%25' y='53%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial,sans-serif' font-size='34' font-weight='700' fill='white'%3ER%3C/text%3E%3C/svg%3E">
+    <link id="flatpickr-theme" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
     <script>
         function applySystemTheme(isDark) {
             const root = document.documentElement;
             root.classList.toggle('dark', Boolean(isDark));
             root.style.colorScheme = isDark ? 'dark' : 'light';
+
+            const flatpickrThemeLink = document.getElementById('flatpickr-theme');
+            if (flatpickrThemeLink) {
+                const themeHref = isDark
+                    ? '../assets/vendor/flatpickr/themes/dark.css'
+                    : '../assets/vendor/flatpickr/themes/light.css';
+                if (flatpickrThemeLink.dataset.enabled === 'true') {
+                    flatpickrThemeLink.href = themeHref;
+                } else {
+                    flatpickrThemeLink.dataset.pendingHref = themeHref;
+                }
+            }
         }
 
         applySystemTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);

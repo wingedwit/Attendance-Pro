@@ -416,7 +416,8 @@ select.form-input-m3 {
     font-weight: 700;
 }
 
-#dateInput {
+#dateInput,
+.flatpickr-input {
     cursor: pointer;
 }
 

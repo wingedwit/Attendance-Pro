@@ -77,6 +77,60 @@ const datePillButtons = Array.from(document.querySelectorAll('[data-date-offset]
 let toastTimer = null;
 let activePicker = null;
 
+const FLATPICKR_SCRIPT_SRC = '../assets/vendor/flatpickr/flatpickr.min.js';
+let flatpickrLoadPromise = null;
+let flatpickrInstance = null;
+
+const enableFlatpickrThemeStyles = () => {
+    const themeLink = document.getElementById('flatpickr-theme');
+    if (!themeLink) return;
+    themeLink.dataset.enabled = 'true';
+    if (themeLink.dataset.pendingHref) {
+        themeLink.href = themeLink.dataset.pendingHref;
+    }
+};
+
+const upgradeDatePicker = () => {
+    if (flatpickrInstance || !window.flatpickr || !fields.date) return;
+    enableFlatpickrThemeStyles();
+    flatpickrInstance = flatpickr(fields.date, {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "d-m-Y",
+        onChange: (selectedDates, dateStr) => {
+            setState({ date: dateStr });
+        }
+    });
+    if (state.date) {
+        flatpickrInstance.setDate(state.date, false);
+    }
+};
+
+const ensureFlatpickrLoaded = () => {
+    if (window.flatpickr) {
+        upgradeDatePicker();
+        return Promise.resolve();
+    }
+    if (flatpickrLoadPromise) return flatpickrLoadPromise;
+
+    enableFlatpickrThemeStyles();
+    flatpickrLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = FLATPICKR_SCRIPT_SRC;
+        script.async = true;
+        script.onload = () => {
+            upgradeDatePicker();
+            resolve();
+        };
+        script.onerror = () => {
+            flatpickrLoadPromise = null;
+            reject(new Error('Failed to load flatpickr'));
+        };
+        document.head.appendChild(script);
+    });
+    return flatpickrLoadPromise;
+};
+
 const toLocalISODate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -257,6 +311,9 @@ const syncInputs = () => {
     Object.entries(fields).forEach(([key, input]) => {
         input.value = state[key] || '';
     });
+    if (flatpickrInstance) {
+        flatpickrInstance.setDate(state.date, false);
+    }
 };
 
 const setState = (patch) => {
@@ -343,10 +400,14 @@ Object.entries(fields).forEach(([key, input]) => {
 });
 
 fields.date.addEventListener('click', () => {
-    try {
-        fields.date.showPicker();
-    } catch (error) {
-        console.warn('showPicker is not supported or failed:', error);
+    if (flatpickrInstance) {
+        flatpickrInstance.open();
+    } else {
+        try {
+            fields.date.showPicker();
+        } catch (error) {
+            console.warn('showPicker is not supported or failed:', error);
+        }
     }
 });
 
@@ -356,6 +417,9 @@ datePillButtons.forEach((button, index) => {
         date.setDate(date.getDate() + Number(button.dataset.dateOffset || 0));
         const nextDate = toLocalISODate(date);
         fields.date.value = nextDate;
+        if (flatpickrInstance) {
+            flatpickrInstance.setDate(nextDate, false);
+        }
         setState({ date: nextDate });
     });
 
@@ -551,3 +615,5 @@ upiCopyButton?.addEventListener('click', async () => {
 syncInputs();
 updatePickerButtons();
 renderReport();
+
+ensureFlatpickrLoaded().catch(() => {});
