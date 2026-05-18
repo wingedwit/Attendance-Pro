@@ -668,7 +668,7 @@ mobileCopyButton?.addEventListener('click', async () => {
 
 upiCopyButton?.addEventListener('click', async () => {
     try {
-        await copyText('8890259964@paytm');
+        await copyText('vaibhav.ganesh51@okaxis');
         showToast('Copied UPI ID');
     } catch (_) {}
 });
