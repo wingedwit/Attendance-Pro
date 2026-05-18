@@ -317,6 +317,7 @@ svg {
 }
 
 .topic-field,
+.date-field,
 .attendance-field {
     grid-column: 1 / -1;
 }
@@ -413,6 +414,14 @@ select.form-input-m3 {
 
 #topicInput {
     font-weight: 700;
+}
+
+#dateInput {
+    cursor: pointer;
+}
+
+#dateInput::-webkit-calendar-picker-indicator {
+    cursor: pointer;
 }
 
 .date-pills {

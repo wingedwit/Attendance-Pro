@@ -342,6 +342,14 @@ Object.entries(fields).forEach(([key, input]) => {
     input.addEventListener('change', () => setState({ [key]: input.value }));
 });
 
+fields.date.addEventListener('click', () => {
+    try {
+        fields.date.showPicker();
+    } catch (error) {
+        console.warn('showPicker is not supported or failed:', error);
+    }
+});
+
 datePillButtons.forEach((button, index) => {
     button.addEventListener('click', () => {
         const date = new Date();

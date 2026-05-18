@@ -31,9 +31,9 @@
 
             <main id="inputContainer">
                 <form id="sessionForm" class="form-stack entrance-animate" autocomplete="off">
-                    <label class="field" style="--i:0">
+                    <div class="field date-field" style="--i:0">
                         <span class="field-heading">
-                            <span class="form-label-bold">Date</span>
+                            <label for="dateInput" class="form-label-bold" style="margin-bottom: 0;">Date</label>
                             <span class="date-pills" aria-label="Quick date options">
                                 <button type="button" class="date-pill" data-date-offset="-1">Yesterday</button>
                                 <button type="button" class="date-pill" data-date-offset="0">Today</button>
@@ -41,7 +41,7 @@
                             </span>
                         </span>
                         <input id="dateInput" name="date" type="date" class="form-input-m3">
-                    </label>
+                    </div>
 
                     <label class="field topic-field" style="--i:1">
                         <span class="form-label-bold">Topic</span>
