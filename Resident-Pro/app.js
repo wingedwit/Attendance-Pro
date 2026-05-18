@@ -303,13 +303,44 @@ const buildGoogleDocText = () => getReportRows()
         return `${label}: ${value}`;
     }).join('\n');
 
-const copyText = async (text) => {
+const buildGoogleDocHtml = () => getReportRows()
+    .filter(([label]) => !(state.type === 'Practical' && label === 'Presenter'))
+    .map(([label, value]) => {
+        const escapedLabel = escapeHtml(label);
+        const escapedValue = escapeHtml(value).replace(/\n/g, '<br>');
+        
+        if (label === 'Date') {
+            return `<b>${escapedLabel}: ${escapedValue}</b>`;
+        }
+        if (label === 'Resident Present') {
+            return `<b>${escapedLabel}:</b><br>${escapedValue}`;
+        }
+        return `<b>${escapedLabel}:</b> ${escapedValue}`;
+    }).join('<br>');
+
+const copyText = async (plainText, htmlText) => {
+    if (navigator.clipboard && window.ClipboardItem) {
+        try {
+            const plainBlob = new Blob([plainText], { type: 'text/plain' });
+            const htmlBlob = new Blob([htmlText], { type: 'text/html' });
+            const item = new ClipboardItem({
+                'text/plain': plainBlob,
+                'text/html': htmlBlob
+            });
+            await navigator.clipboard.write([item]);
+            return;
+        } catch (err) {
+            console.warn('ClipboardItem copy failed, falling back to writeText:', err);
+        }
+    }
+
     if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(plainText);
         return;
     }
+
     const textArea = document.createElement('textarea');
-    textArea.value = text;
+    textArea.value = plainText;
     textArea.style.position = 'fixed';
     textArea.style.left = '-9999px';
     document.body.appendChild(textArea);
@@ -336,6 +367,17 @@ const setState = (patch) => {
     if (nextState.type === 'Practical') {
         nextState.presenter = '';
     }
+
+    // Auto-Select Presenter Attendance
+    if (patch.hasOwnProperty('presenter') && patch.presenter) {
+        const presenter = patch.presenter;
+        const residentsPresent = Array.isArray(nextState.residentsPresent) ? [...nextState.residentsPresent] : [];
+        if (!residentsPresent.includes(presenter)) {
+            residentsPresent.push(presenter);
+            nextState.residentsPresent = residentsPresent;
+        }
+    }
+
     state = nextState;
     saveState();
     updatePickerButtons();
@@ -593,7 +635,7 @@ document.addEventListener('keydown', (event) => {
 
 copyDocButton.addEventListener('click', async () => {
     try {
-        await copyText(buildGoogleDocText());
+        await copyText(buildGoogleDocText(), buildGoogleDocHtml());
         showToast('Copied G-Doc data');
         
         copyDocButton.classList.add('success');
