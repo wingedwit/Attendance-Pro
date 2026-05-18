@@ -294,12 +294,14 @@ const updatePickerButtons = () => {
     });
 };
 
-const buildGoogleDocText = () => getReportRows().map(([label, value]) => {
-    if (label === 'Resident Present') {
-        return `${label}:\n${value}`;
-    }
-    return `${label}: ${value}`;
-}).join('\n');
+const buildGoogleDocText = () => getReportRows()
+    .filter(([label]) => !(state.type === 'Practical' && label === 'Presenter'))
+    .map(([label, value]) => {
+        if (label === 'Resident Present') {
+            return `${label}:\n${value}`;
+        }
+        return `${label}: ${value}`;
+    }).join('\n');
 
 const copyText = async (text) => {
     if (navigator.clipboard) {
