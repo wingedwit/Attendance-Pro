@@ -793,12 +793,7 @@ select.form-input-m3 {
     transform: translateY(-1.5px);
 }
 
-.resident-option.focused-nav {
-    border-color: var(--primary) !important;
-    background: var(--surface-hover) !important;
-    box-shadow: 0 0 0 3.5px var(--primary-soft) !important;
-    transform: translateY(-2px) !important;
-}
+
 
 .modal-action {
     flex: 1;
