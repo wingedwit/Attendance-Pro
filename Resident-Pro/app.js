@@ -222,6 +222,19 @@ const getResidentsPresentText = () => {
     return lines.join('\n');
 };
 
+const getResidentsAbsentText = () => {
+    const selected = getSelectedResidents();
+    const absent = [];
+    RESIDENT_GROUPS.forEach(group => {
+        group.names.forEach(name => {
+            if (!selected.includes(name)) {
+                absent.push(name);
+            }
+        });
+    });
+    return `Absent - ${absent.join(', ')}`;
+};
+
 const getReportRows = () => [
     ['Date', formatDate(state.date)],
     ['Topic', displayValue(state.topic)],
@@ -298,7 +311,7 @@ const buildGoogleDocText = () => getReportRows()
     .filter(([label]) => !(state.type === 'Practical' && label === 'Presenter'))
     .map(([label, value]) => {
         if (label === 'Resident Present') {
-            return `${label}:\n${value}`;
+            return `${label}:\n${value}\n${getResidentsAbsentText()}`;
         }
         return `${label}: ${value}`;
     }).join('\n');
@@ -310,13 +323,14 @@ const buildGoogleDocHtml = () => getReportRows()
         const escapedValue = escapeHtml(value).replace(/\n/g, '<br>');
         
         if (label === 'Date') {
-            return `<b>${escapedLabel}: ${escapedValue}</b>`;
+            return `<div style="margin: 0; line-height: 1.15; font-weight: bold;">${escapedLabel}: ${escapedValue}</div>`;
         }
         if (label === 'Resident Present') {
-            return `<b>${escapedLabel}:</b><br>${escapedValue}`;
+            const escapedAbsent = escapeHtml(getResidentsAbsentText());
+            return `<div style="margin: 0; line-height: 1.15; font-weight: normal;">${escapedLabel}:<br>${escapedValue}<br>${escapedAbsent}</div>`;
         }
-        return `<b>${escapedLabel}:</b> ${escapedValue}`;
-    }).join('<br>');
+        return `<div style="margin: 0; line-height: 1.15; font-weight: normal;">${escapedLabel}: ${escapedValue}</div>`;
+    }).join('');
 
 const copyText = async (plainText, htmlText) => {
     if (navigator.clipboard && window.ClipboardItem) {
