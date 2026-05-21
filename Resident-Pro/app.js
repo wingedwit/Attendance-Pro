@@ -203,11 +203,25 @@ const loadState = () => {
 
 let state = loadState();
 
-const saveState = () => {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (_) {
-        // Keep functional even if storage is blocked.
+let saveStateTimeout = null;
+const saveState = (immediate = false) => {
+    const performSave = () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (_) {
+            // Keep functional even if storage is blocked.
+        }
+        if (saveStateTimeout) {
+            clearTimeout(saveStateTimeout);
+            saveStateTimeout = null;
+        }
+    };
+
+    if (immediate) {
+        performSave();
+    } else {
+        if (saveStateTimeout) clearTimeout(saveStateTimeout);
+        saveStateTimeout = setTimeout(performSave, 250);
     }
 };
 
@@ -250,25 +264,42 @@ const getReportCardClass = (label) => {
     return `report-card ${label.toLowerCase().replace(/\s+/g, '-')}-card${wideClass}`;
 };
 
-const renderReport = (patch) => {
-    const changedKeys = patch ? Object.keys(patch) : [];
-    const keyToLabel = {
-        date: 'Date', topic: 'Topic', type: 'Type',
-        presenter: 'Presenter', seniorResident: 'Senior Resident',
-        moderator: 'Moderator', residentsPresent: 'Resident Present'
-    };
-    const changedLabels = changedKeys.map(k => keyToLabel[k]);
-
+const initializeReportDOM = () => {
     liveReport.innerHTML = `
         <div class="report-block">
             ${getReportRows().map(([label, value]) => `
-                <div class="${getReportCardClass(label)}${changedLabels.includes(label) ? ' flash' : ''}">
+                <div id="card-${label.toLowerCase().replace(/\s+/g, '-')}" class="${getReportCardClass(label)}">
                     <p class="report-label">${escapeHtml(label)}</p>
                     <p class="report-value">${escapeHtml(value)}</p>
                 </div>
             `).join('')}
         </div>
     `;
+};
+
+const renderReport = () => {
+    if (!liveReport.querySelector('.report-block')) {
+        initializeReportDOM();
+        return;
+    }
+
+    const rows = getReportRows();
+    rows.forEach(([label, value]) => {
+        const cardId = `card-${label.toLowerCase().replace(/\s+/g, '-')}`;
+        const card = document.getElementById(cardId);
+        if (card) {
+            const valueEl = card.querySelector('.report-value');
+            if (valueEl) {
+                if (valueEl.textContent !== value) {
+                    valueEl.textContent = value;
+                    
+                    card.classList.remove('flash');
+                    void card.offsetWidth; // Force reflow
+                    card.classList.add('flash');
+                }
+            }
+        }
+    });
 };
 
 const updatePickerButtons = () => {
@@ -395,7 +426,7 @@ const setState = (patch) => {
     state = nextState;
     saveState();
     updatePickerButtons();
-    renderReport(patch);
+    renderReport();
 };
 
 const renderResidentChecklist = () => {
@@ -478,11 +509,17 @@ fields.date.addEventListener('click', () => {
     if (flatpickrInstance) {
         flatpickrInstance.open();
     } else {
-        try {
-            fields.date.showPicker();
-        } catch (error) {
-            console.warn('showPicker is not supported or failed:', error);
-        }
+        ensureFlatpickrLoaded()
+            .then(() => {
+                if (flatpickrInstance) flatpickrInstance.open();
+            })
+            .catch(() => {
+                try {
+                    fields.date.showPicker();
+                } catch (error) {
+                    console.warn('showPicker is not supported or failed:', error);
+                }
+            });
     }
 });
 
@@ -666,7 +703,7 @@ copyDocButton.addEventListener('click', async () => {
 
 clearButton.addEventListener('click', () => {
     state = getInitialState();
-    saveState();
+    saveState(true);
     syncInputs();
     updatePickerButtons();
     renderReport();
@@ -691,4 +728,11 @@ syncInputs();
 updatePickerButtons();
 renderReport();
 
-ensureFlatpickrLoaded().catch(() => {});
+// Defer Flatpickr loading until window load and browser idle
+window.addEventListener('load', () => {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => ensureFlatpickrLoaded().catch(() => {}));
+    } else {
+        setTimeout(() => ensureFlatpickrLoaded().catch(() => {}), 1000);
+    }
+});
