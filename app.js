@@ -302,6 +302,25 @@
                 }
             };
 
+            const copyRichText = (html, plain, successMessage, copiedLabel = "") => {
+                const toastMessage = copiedLabel ? `${successMessage} (${copiedLabel})` : successMessage;
+                if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+                    const htmlBlob = new Blob([html], { type: 'text/html' });
+                    const textBlob = new Blob([plain], { type: 'text/plain' });
+                    const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
+                    return navigator.clipboard.write([item])
+                        .then(() => {
+                            showToast(toastMessage);
+                            return true;
+                        })
+                        .catch(() => {
+                            return copyText(plain, successMessage, copiedLabel);
+                        });
+                } else {
+                    return copyText(plain, successMessage, copiedLabel);
+                }
+            };
+
             if (elements.upiCopyButton) {
                 elements.upiCopyButton.addEventListener("click", () => copyText("vaibhav.ganesh51@okaxis", "Copied", "UPI ID"));
             }
@@ -858,19 +877,26 @@
                 
                 const { presentNumbers, absentNumbers } = report.stats;
 
+
                 const dateWithDay = report.dateWithDay.replace(
                     /^(\d{2})-(\d{2})-(\d{4})/,
                     '$1/$2/$3'
                 );
 
-                const text = `Date: ${dateWithDay}, Time: ${report.timeLine}
+                const presentList = report.presentRanges.join(', ') || 'None';
+                const absentList = report.absentRanges.join(', ') || 'None';
+
+                const plain = `Date: ${dateWithDay}, Time: ${report.timeLine}
 Faculty - ${state.facultyName || '-'}, Senior Resident - ${state.srName || '-'}
 Topic - ${state.lectureTopic || '-'}
 Type - ${report.typeLine || '-'}
 Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)
-Present Students: ${report.presentRanges.join(', ') || 'None'}
-Absent Students: ${report.absentRanges.join(', ') || 'None'}`;
-                return text;
+• Present Students: ${presentList}
+• Absent Students: ${absentList}`;
+
+                const html = `Date: <b>${escapeHtml(dateWithDay)}</b>, Time: ${escapeHtml(report.timeLine)}<br>Faculty - ${escapeHtml(state.facultyName || '-')}, Senior Resident - ${escapeHtml(state.srName || '-')}<br>Topic - ${escapeHtml(state.lectureTopic || '-')}<br>Type - ${escapeHtml(report.typeLine || '-')}<br>Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)<ul><li>Present Students: ${escapeHtml(presentList)}</li><li>Absent Students: ${escapeHtml(absentList)}</li></ul>`;
+
+                return { plain, html };
             };
 
             const buildSheetCopyText = () => {
@@ -911,9 +937,9 @@ Absent Students: ${report.absentRanges.join(', ') || 'None'}`;
             };
 
             const copyReportData = (trigger = 'menu') => {
-                const text = buildReportCopyText();
-                if (!text) return;
-                copyText(text, "Copied", "G-Doc Data");
+                const result = buildReportCopyText();
+                if (!result) return;
+                copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
                 closeDownloadMenu();
                 trackEvent('copy_gdoc_data', { trigger });
             };
