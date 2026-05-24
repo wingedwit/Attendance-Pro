@@ -253,7 +253,7 @@ const getReportRows = () => [
     ['Date', formatDate(state.date)],
     ['Topic', displayValue(state.topic)],
     ['Type', displayValue(state.type)],
-    ['Presenter', state.type === 'Practical' ? 'N/A' : displayValue(state.presenter)],
+    ['Presenter', displayValue(state.presenter)],
     ['Senior Resident', displayValue(state.seniorResident)],
     ['Moderator', displayValue(state.moderator)],
     ['Resident Present', getResidentsPresentText()]
@@ -309,7 +309,7 @@ const updatePickerButtons = () => {
     const isPractical = state.type === 'Practical';
     presenterPickerButton.disabled = isPractical;
     if (isPractical) {
-        presenterPickerValue.textContent = 'N/A';
+        presenterPickerValue.textContent = '';
         presenterPickerButton.classList.remove('empty-picker');
         presenterPickerButton.classList.add('disabled-picker');
     } else {

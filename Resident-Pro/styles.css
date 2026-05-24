@@ -441,27 +441,37 @@ select.form-input-m3 {
     background: transparent;
     font-size: 0.75rem;
     font-weight: 600;
+    line-height: 1.1;
     transition: all 0.16s ease;
 }
 
 .dark .date-pill {
+    color: var(--text);
+    border-color: var(--border);
     background: rgba(34, 42, 56, 0.82);
 }
 
 .date-pill:hover {
     transform: translateY(-1px);
+    filter: brightness(0.98);
     background: var(--surface);
 }
 
 .dark .date-pill:hover {
+    filter: brightness(1.06);
     background: rgba(44, 52, 66, 0.9);
 }
 
 .date-pill.active {
     border-color: var(--primary);
-    color: #ffffff;
-    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-    box-shadow: 0 4px 12px var(--primary-soft);
+    color: var(--primary);
+    background: rgba(23, 105, 255, 0.08);
+}
+
+.dark .date-pill.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(102, 163, 255, 0.14);
 }
 
 .action-btn {
@@ -546,6 +556,39 @@ select.form-input-m3 {
 
 .dark .download-button:hover {
     box-shadow: 0 8px 16px rgba(255, 179, 122, 0.18);
+}
+
+.report-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.attendance-link-icon {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(23, 105, 255, 0.26);
+    color: #ffffff;
+    background: linear-gradient(135deg, #1769ff 0%, #1d4ed8 100%);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    box-shadow: 0 6px 14px rgba(23, 105, 255, 0.22);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.attendance-link-icon:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+    box-shadow: 0 10px 20px rgba(23, 105, 255, 0.26);
+}
+
+.attendance-link-icon:focus-visible {
+    outline: 2px solid rgba(23, 105, 255, 0.5);
+    outline-offset: 2px;
 }
 
 #liveReport {

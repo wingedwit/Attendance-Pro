@@ -70,7 +70,7 @@
                 <button id="redoButton" class="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30" disabled title="Redo" aria-label="Redo last change">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg>
                 </button>
-                <button id="clearFormButton" class="p-2.5 text-error-light dark:text-error-dark hover:bg-error-container-light/30 dark:hover:bg-error-container-dark/30 rounded-full" title="Reset" aria-label="Reset form">
+                <button id="clearFormButton" class="header-icon-button danger" title="Reset" aria-label="Reset form">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             </div>
@@ -248,15 +248,18 @@
                 <div>
                     <h2 class="caps-bold-heading opacity-90">Live Report</h2>
                 </div>
-                <div class="download-menu" id="downloadMenu">
-                    <button id="downloadButton" class="action-btn primary text-sm transition-all" title="Download Options" aria-label="Download Options" aria-haspopup="menu" aria-expanded="false">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
-                        </svg>
-                    </button>
-                    <div id="downloadDropdown" class="download-dropdown" role="menu">
-                        <button type="button" id="downloadOptionReport" class="download-option" role="menuitem">Copy G-Doc Data</button>
-                        <button type="button" id="downloadOptionSheet" class="download-option" data-kind="sheet" role="menuitem">Copy G-Sheet Data</button>
+                <div class="report-actions">
+                    <a class="resident-link-icon action-btn" href="https://wingedwit.github.io/Attendance-Pro/Resident-Pro/" target="_blank" rel="noopener noreferrer" title="Open Resident Pro" aria-label="Open Resident Pro in new tab">R</a>
+                    <div class="download-menu" id="downloadMenu">
+                        <button id="downloadButton" class="action-btn primary text-sm transition-all" title="Download Options" aria-label="Download Options" aria-haspopup="menu" aria-expanded="false">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
+                            </svg>
+                        </button>
+                        <div id="downloadDropdown" class="download-dropdown" role="menu">
+                            <button type="button" id="downloadOptionReport" class="download-option" role="menuitem">Copy G-Doc Data</button>
+                            <button type="button" id="downloadOptionSheet" class="download-option" data-kind="sheet" role="menuitem">Copy G-Sheet Data</button>
+                        </div>
                     </div>
                 </div>
             </div>

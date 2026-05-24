@@ -138,11 +138,14 @@
         <section class="panel-shell report-shell" aria-labelledby="reportTitle">
             <header class="report-header" id="liveReportHeader">
                 <h2 id="reportTitle" class="caps-bold-heading">Live Report</h2>
-                <button id="copyDocButton" class="download-button action-btn primary" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
-                    <svg id="copyDocIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
-                    </svg>
-                </button>
+                <div class="report-actions">
+                    <a class="attendance-link-icon action-btn" href="https://wingedwit.github.io/Attendance-Pro/" target="_blank" rel="noopener noreferrer" title="Open Attendance Pro" aria-label="Open Attendance Pro in new tab">A</a>
+                    <button id="copyDocButton" class="download-button action-btn primary" type="button" title="Copy G-Doc Data" aria-label="Copy G-Doc Data">
+                        <svg id="copyDocIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14"></path>
+                        </svg>
+                    </button>
+                </div>
             </header>
 
             <div id="outputPanel">

@@ -828,55 +828,52 @@
             });
 
             const resetForm = () => {
-                if (confirm("Reset form? All data will be cleared.")) { 
-                    cancelPendingAttendanceCommit();
-                    cancelScheduledRollCountUpdate();
-                    if (persistTimer) {
-                        clearTimeout(persistTimer);
-                        persistTimer = null;
-                    }
-                    persistPendingState = null;
-                    safeStorage.remove(STORAGE_KEY);
-                    const clearedState = getInitialState();
-
-                    state = clearedState;
-                    undoStack = [JSON.stringify(clearedState)];
-                    redoStack = [];
-
-                    datePicker.setDate(clearedState.date, true);
-                    elements.startTimeEl.value = '';
-                    elements.endTimeEl.value = '';
-
-                    ['facultyName', 'srName', 'lectureTopic', 'theoryType', 'batch', 'minRoll', 'maxRoll', 'attendanceInput']
-                        .forEach(key => { elements[key].value = ''; });
-                    elements.classType.value = 'Theory';
-                    elements.attendanceInput.classList.remove('form-input-valid', 'form-input-error');
-                    elements.errorMessage.textContent = '';
-                    elements.rollCount.textContent = '0';
-
-                    updateAttendanceModeUI('present');
-
-                    toggleClassTypeFields();
-
-                    resetOutputPanel();
-
-                    switchSection('section1');
-
-                    showToast("Form cleared");
-                    updateUndoRedoButtons();
+                cancelPendingAttendanceCommit();
+                cancelScheduledRollCountUpdate();
+                if (persistTimer) {
+                    clearTimeout(persistTimer);
+                    persistTimer = null;
                 }
+                persistPendingState = null;
+                safeStorage.remove(STORAGE_KEY);
+                const clearedState = getInitialState();
+
+                state = clearedState;
+                undoStack = [JSON.stringify(clearedState)];
+                redoStack = [];
+
+                datePicker.setDate(clearedState.date, true);
+                elements.startTimeEl.value = '';
+                elements.endTimeEl.value = '';
+
+                ['facultyName', 'srName', 'lectureTopic', 'theoryType', 'batch', 'minRoll', 'maxRoll', 'attendanceInput']
+                    .forEach(key => { elements[key].value = ''; });
+                elements.classType.value = 'Theory';
+                elements.attendanceInput.classList.remove('form-input-valid', 'form-input-error');
+                elements.errorMessage.textContent = '';
+                elements.rollCount.textContent = '0';
+
+                updateAttendanceModeUI('present');
+
+                toggleClassTypeFields();
+
+                resetOutputPanel();
+
+                switchSection('section1');
+
+                showToast("Form cleared");
+                updateUndoRedoButtons();
             };
             elements.clearFormButton.addEventListener("click", resetForm);
 
             const buildReportCopyText = () => {
                 const report = getReportModel();
-                if (!report.validation.valid && state.attendance.trim() !== "") { 
-                    showToast("Fix errors first", true); 
+                if (!report.validation.valid && state.attendance.trim() !== "") {
+                    showToast("Fix errors first", true);
                     return null;
                 }
-                
-                const { presentNumbers, absentNumbers } = report.stats;
 
+                const { presentNumbers, absentNumbers } = report.stats;
 
                 const dateWithDay = report.dateWithDay.replace(
                     /^(\d{2})-(\d{2})-(\d{4})/,
@@ -891,9 +888,8 @@ Faculty - ${state.facultyName || '-'}, Senior Resident - ${state.srName || '-'}
 Topic - ${state.lectureTopic || '-'}
 Type - ${report.typeLine || '-'}
 Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)
-• Present Students: ${presentList}
-• Absent Students: ${absentList}`;
-
+- Present Students: ${presentList}
+- Absent Students: ${absentList}`;
                 const html = `Date: <b>${escapeHtml(dateWithDay)}</b>, Time: ${escapeHtml(report.timeLine)}<br>Faculty - ${escapeHtml(state.facultyName || '-')}, Senior Resident - ${escapeHtml(state.srName || '-')}<br>Topic - ${escapeHtml(state.lectureTopic || '-')}<br>Type - ${escapeHtml(report.typeLine || '-')}<br>Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)<ul><li>Present Students: ${escapeHtml(presentList)}</li><li>Absent Students: ${escapeHtml(absentList)}</li></ul>`;
 
                 return { plain, html };
