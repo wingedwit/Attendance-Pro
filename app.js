@@ -363,7 +363,11 @@
             };
 
             const getClassTypeLine = () => {
-                if (state.classType === "Theory" && state.theoryType) return `Lecture (${state.theoryType})`;
+                if (state.classType === "Theory" && state.theoryType) {
+                    const normalizedTheoryType = String(state.theoryType).trim();
+                    if (/^lecture$/i.test(normalizedTheoryType)) return "Lecture";
+                    return `Lecture (${normalizedTheoryType})`;
+                }
                 if (state.classType === "Practical" && state.batch) return `Practical (${state.batch})`;
                 return state.classType || '-';
             };
