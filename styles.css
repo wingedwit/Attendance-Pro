@@ -344,7 +344,7 @@
             border: 1px solid rgba(23, 105, 255, 0.26);
             color: #ffffff;
             background: linear-gradient(135deg, #1769ff 0%, #1d4ed8 100%);
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 800;
             line-height: 1;
             text-decoration: none;
@@ -552,6 +552,9 @@
         .section-footer {
             margin-top: auto;
             padding-top: 2rem;
+        }
+        #section3 .section-footer {
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
         }
 
         .count-display {

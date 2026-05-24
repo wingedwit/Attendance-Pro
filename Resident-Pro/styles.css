@@ -62,8 +62,10 @@ body {
 
 body {
     min-width: 1080px;
-    height: 100dvh;
-    overflow: hidden;
+    min-height: 100vh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     color: var(--text);
     background-color: var(--page);
     background-image:
@@ -99,10 +101,13 @@ svg {
 
 .app-shell {
     width: 100%;
-    height: 100dvh;
+    height: auto;
+    min-height: 100dvh;
     display: flex;
-    gap: 0.9rem;
-    padding: 0.9rem;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    overflow: visible;
 }
 
 .panel-shell {
@@ -123,19 +128,19 @@ svg {
 
 .input-shell,
 .report-shell {
-    flex: 1 1 0;
-    width: auto;
+    width: 50%;
+    flex: 0 0 calc((100% - 1.25rem) / 2);
 }
 
 .app-header,
 .report-header {
-    min-height: 4.85rem;
+    min-height: 5.6rem;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.05rem 1.25rem;
+    padding: 1.5rem;
     border-bottom: 1px solid var(--border);
 }
 
@@ -286,7 +291,7 @@ svg {
     min-height: 0;
     flex: 1;
     overflow-y: auto;
-    padding: 1.4rem;
+    padding: 2.5rem;
 }
 
 #inputContainer::-webkit-scrollbar,
@@ -670,29 +675,44 @@ select.form-input-m3 {
 }
 
 #toast {
+    visibility: hidden;
+    opacity: 0;
     position: fixed;
     left: 50%;
-    bottom: 1.6rem;
-    z-index: 120;
-    max-width: min(24rem, calc(100vw - 2.4rem));
-    transform: translateX(-50%) translateY(0.8rem);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.75rem 1.25rem;
-    color: var(--text);
-    background: var(--panel-strong);
-    box-shadow: var(--shadow);
-    font-size: 0.86rem;
-    font-weight: 850;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    will-change: transform, opacity;
+    transform: translateX(-50%);
+    bottom: 30px;
+    background-color: #322F35;
+    color: #F5EFF7;
+    padding: 0.75rem 1.5rem;
+    border-radius: 99px;
+    z-index: 100;
+    transition: all 0.3s;
+    font-size: 0.875rem;
 }
 
 #toast.show {
-    transform: translateX(-50%) translateY(0);
+    visibility: visible;
     opacity: 1;
+    bottom: 50px;
+}
+
+#toast.error {
+    background-color: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #ef4444;
+    box-shadow: 0 10px 24px rgba(127, 29, 29, 0.18);
+}
+
+.dark #toast.error {
+    background-color: #7f1d1d;
+    color: #fee2e2;
+    border: 1px solid #ef4444;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark #toast {
+    background-color: #322F35;
+    color: #F5EFF7;
 }
 
 .hidden {
@@ -1026,19 +1046,19 @@ select.form-input-m3 {
 
 @media (max-height: 780px) {
     .app-shell {
-        padding: 0.75rem;
-        gap: 0.75rem;
+        padding: 1rem;
+        gap: 1rem;
     }
 
     .app-header,
     .report-header {
-        min-height: 4.4rem;
-        padding: 0.9rem 1.1rem;
+        min-height: 4.8rem;
+        padding: 1.1rem 1.25rem;
     }
 
     #inputContainer,
     #outputPanel {
-        padding: 0.9rem;
+        padding: 1.25rem;
     }
 
     .form-stack,
@@ -1054,5 +1074,23 @@ select.form-input-m3 {
     .report-card {
         min-height: 4.65rem;
         padding: 0.78rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    body {
+        overflow: hidden;
+        height: 100dvh;
+    }
+
+    .app-shell {
+        height: 100dvh;
+        min-height: 100dvh;
+        overflow: hidden;
+    }
+
+    .input-shell,
+    .report-shell {
+        height: 100%;
     }
 }
