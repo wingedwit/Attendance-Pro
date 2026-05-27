@@ -41,6 +41,8 @@ const fields = {
 const liveReport = document.getElementById('liveReport');
 const copyDocButton = document.getElementById('copyDocButton');
 const copyDocIcon = document.getElementById('copyDocIcon');
+const undoButton = document.getElementById('undoButton');
+const redoButton = document.getElementById('redoButton');
 const mobileCopyButton = document.getElementById('mobileCopyButton');
 const upiCopyButton = document.getElementById('upiCopyButton');
 const clearButton = document.getElementById('clearButton');
@@ -202,6 +204,9 @@ const loadState = () => {
 };
 
 let state = loadState();
+let undoStack = [JSON.stringify(state)];
+let redoStack = [];
+const MAX_UNDO_HISTORY = 200;
 
 let saveStateTimeout = null;
 const saveState = (immediate = false) => {
@@ -407,6 +412,20 @@ const syncInputs = () => {
     }
 };
 
+const updateUndoRedoButtons = () => {
+    if (undoButton) undoButton.disabled = undoStack.length <= 1;
+    if (redoButton) redoButton.disabled = redoStack.length === 0;
+};
+
+const loadStateWithoutRecording = (nextState, persist = true) => {
+    state = nextState;
+    if (persist) saveState(true);
+    syncInputs();
+    updatePickerButtons();
+    renderReport();
+    updateUndoRedoButtons();
+};
+
 const setState = (patch) => {
     let nextState = { ...state, ...patch };
     if (nextState.type === 'Practical') {
@@ -422,11 +441,15 @@ const setState = (patch) => {
             nextState.residentsPresent = residentsPresent;
         }
     }
-
+    if (JSON.stringify(nextState) === JSON.stringify(state)) return;
     state = nextState;
+    undoStack.push(JSON.stringify(state));
+    if (undoStack.length > MAX_UNDO_HISTORY) undoStack.shift();
+    redoStack = [];
     saveState();
     updatePickerButtons();
     renderReport();
+    updateUndoRedoButtons();
 };
 
 const renderResidentChecklist = () => {
@@ -682,6 +705,20 @@ document.addEventListener('keydown', (event) => {
         event.preventDefault();
         clearButton.click();
     }
+
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+        event.preventDefault();
+        undoButton?.click();
+        return;
+    }
+
+    if (
+        ((event.ctrlKey || event.metaKey) && (event.key === 'y' || event.key === 'Y')) ||
+        ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'z' || event.key === 'Z'))
+    ) {
+        event.preventDefault();
+        redoButton?.click();
+    }
 });
 
 copyDocButton.addEventListener('click', async () => {
@@ -703,11 +740,28 @@ copyDocButton.addEventListener('click', async () => {
 
 clearButton.addEventListener('click', () => {
     state = getInitialState();
+    undoStack = [JSON.stringify(state)];
+    redoStack = [];
     saveState(true);
     syncInputs();
     updatePickerButtons();
     renderReport();
+    updateUndoRedoButtons();
     showToast('Form cleared');
+});
+
+undoButton?.addEventListener('click', () => {
+    if (undoStack.length <= 1) return;
+    redoStack.push(undoStack.pop());
+    const previousState = JSON.parse(undoStack[undoStack.length - 1]);
+    loadStateWithoutRecording(previousState);
+});
+
+redoButton?.addEventListener('click', () => {
+    if (redoStack.length === 0) return;
+    const nextState = JSON.parse(redoStack.pop());
+    undoStack.push(JSON.stringify(nextState));
+    loadStateWithoutRecording(nextState);
 });
 
 mobileCopyButton?.addEventListener('click', async () => {
@@ -727,6 +781,7 @@ upiCopyButton?.addEventListener('click', async () => {
 syncInputs();
 updatePickerButtons();
 renderReport();
+updateUndoRedoButtons();
 
 // Defer Flatpickr loading until window load and browser idle
 window.addEventListener('load', () => {

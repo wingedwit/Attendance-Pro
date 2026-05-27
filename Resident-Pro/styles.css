@@ -528,6 +528,11 @@ select.form-input-m3 {
 .header-icon-button:hover {
     background: var(--surface-hover);
 }
+.header-icon-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
 .header-icon-button.danger {
     color: var(--danger);
