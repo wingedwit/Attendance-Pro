@@ -124,6 +124,7 @@ svg {
 }
 .dark .panel-shell {
     border-color: var(--border);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.38);
 }
 
 .input-shell,
@@ -134,7 +135,7 @@ svg {
 
 .app-header,
 .report-header {
-    min-height: 5.6rem;
+    min-height: 0;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -282,8 +283,11 @@ svg {
     font-size: 1.5rem;
     line-height: 2rem;
     font-weight: 700;
-    letter-spacing: 0;
+    letter-spacing: -0.025em;
     text-transform: uppercase;
+}
+.app-header .caps-bold-heading {
+    color: var(--primary);
 }
 
 #inputContainer,
@@ -292,6 +296,17 @@ svg {
     flex: 1;
     overflow-y: auto;
     padding: 2.5rem;
+}
+
+.dark .app-header,
+.dark .report-header,
+.dark .developer-credit {
+    background: linear-gradient(180deg, rgba(8, 11, 16, 0.94), rgba(4, 7, 12, 0.92));
+}
+
+.dark #inputContainer,
+.dark #outputPanel {
+    background: linear-gradient(180deg, rgba(9, 13, 19, 0.28), rgba(3, 5, 9, 0.12));
 }
 
 #inputContainer::-webkit-scrollbar,
@@ -536,6 +551,48 @@ select.form-input-m3 {
 
 .header-icon-button.danger {
     color: var(--danger);
+    background: var(--danger-soft);
+}
+
+.header-toolbar-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: inline-grid;
+    place-items: center;
+    padding: 0.625rem;
+    border: 0;
+    border-radius: 999px;
+    color: inherit;
+    background: transparent;
+    transition: background-color 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+}
+
+.header-toolbar-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    stroke-width: 2;
+}
+
+.header-toolbar-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dark .header-toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.header-toolbar-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.header-toolbar-btn.danger {
+    color: var(--danger);
+    background: var(--danger-soft);
+}
+
+.header-toolbar-btn.danger:hover {
     background: var(--danger-soft);
 }
 
@@ -1057,7 +1114,7 @@ select.form-input-m3 {
 
     .app-header,
     .report-header {
-        min-height: 4.8rem;
+        min-height: 0;
         padding: 1.1rem 1.25rem;
     }
 
