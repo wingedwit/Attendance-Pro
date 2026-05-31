@@ -733,7 +733,12 @@
                 }
 
                 const validation = getValidationResult(input);
-                if (!validation.valid) {
+                const hasHardErrors = (
+                    (validation.errors?.nonNumeric?.length || 0) > 0 ||
+                    (validation.errors?.outOfRange?.length || 0) > 0 ||
+                    (validation.errors?.invalidRange?.length || 0) > 0
+                );
+                if (hasHardErrors) {
                     elements.errorMessage.textContent = buildValidationErrorMessage(validation);
                     elements.attendanceInput.classList.remove('form-input-valid');
                     elements.attendanceInput.classList.add('form-input-error');
@@ -741,7 +746,7 @@
                     return;
                 }
 
-                const sortedValid = validation.numbers;
+                const sortedValid = [...new Set(validation.numbers)].sort((a, b) => a - b);
                 const newInput = sortedValid.join(', ');
 
                 elements.attendanceInput.value = newInput;
@@ -752,7 +757,12 @@
                 setState({ attendance: newInput });
 
                 const validCount = sortedValid.length;
-                showToast(`Sorted ${validCount} valid roll${validCount !== 1 ? 's' : ''}`);
+                const removedDuplicates = Math.max(0, validation.numbers.length - sortedValid.length);
+                if (removedDuplicates > 0) {
+                    showToast(`Sorted ${validCount} rolls and removed ${removedDuplicates} duplicate${removedDuplicates !== 1 ? 's' : ''}`);
+                } else {
+                    showToast(`Sorted ${validCount} valid roll${validCount !== 1 ? 's' : ''}`);
+                }
             });
 
             const fastFields = ['theoryType', 'batch', 'facultyName', 'srName', 'lectureTopic'];
