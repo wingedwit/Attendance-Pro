@@ -122,6 +122,7 @@
             let flatpickrLoadPromise = null;
             let flatpickrInstance = null;
             let toastTimer = null;
+            let copySuccessTimer = null;
             const trackEvent = (eventName, params = {}) => {
                 if (typeof window.gtag !== 'function') return;
                 window.gtag('event', eventName, params);
@@ -319,6 +320,24 @@
                 } else {
                     return copyText(plain, successMessage, copiedLabel);
                 }
+            };
+
+            const setDownloadButtonPath = (d) => {
+                const pathNode = elements.downloadButton?.querySelector('path');
+                if (!pathNode || !d) return;
+                pathNode.setAttribute('d', d);
+            };
+
+            const triggerDownloadButtonSuccess = () => {
+                if (!elements.downloadButton) return;
+                elements.downloadButton.classList.add('success');
+                setDownloadButtonPath("M5 13l4 4L19 7");
+                if (copySuccessTimer) clearTimeout(copySuccessTimer);
+                copySuccessTimer = setTimeout(() => {
+                    copySuccessTimer = null;
+                    elements.downloadButton.classList.remove('success');
+                    setDownloadButtonPath("M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14");
+                }, 2000);
             };
 
             if (elements.upiCopyButton) {
@@ -946,18 +965,20 @@ Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.pre
                 elements.downloadButton.setAttribute('aria-expanded', 'true');
             };
 
-            const copyReportData = (trigger = 'menu') => {
+            const copyReportData = async (trigger = 'menu') => {
                 const result = buildReportCopyText();
                 if (!result) return;
-                copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
+                const copied = await copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
+                if (copied) triggerDownloadButtonSuccess();
                 closeDownloadMenu();
                 trackEvent('copy_gdoc_data', { trigger });
             };
 
-            const copySheetData = () => {
+            const copySheetData = async () => {
                 const text = buildSheetCopyText();
                 if (!text) return;
-                copyText(text, "Copied", "G-Sheet Data");
+                const copied = await copyText(text, "Copied", "G-Sheet Data");
+                if (copied) triggerDownloadButtonSuccess();
                 closeDownloadMenu();
             };
 

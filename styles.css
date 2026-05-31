@@ -328,6 +328,15 @@
         .dark #downloadButton:hover {
             box-shadow: 0 8px 16px rgba(255, 179, 122, 0.18);
         }
+        #downloadButton.success {
+            background: #10b981 !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.28);
+        }
+        .dark #downloadButton.success {
+            background: #10b981 !important;
+            color: #ffffff !important;
+        }
         .report-actions {
             display: inline-flex;
             align-items: center;
