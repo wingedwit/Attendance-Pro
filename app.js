@@ -91,6 +91,8 @@
                 savedIndicator: document.getElementById("savedIndicator"),
                 clearRollsButton: document.getElementById("clearRollsButton"),
                 sortAndHighlightButton: document.getElementById("sortAndHighlightButton"),
+                mobileReportCopyButton: document.getElementById("mobileReportCopyButton"),
+                mobileReportCopyIcon: document.getElementById("mobileReportCopyIcon"),
                 upiCopyButton: document.getElementById("upiCopyButton"),
                 mobileCopyButton: document.getElementById("mobileCopyButton"),
                 setYesterdayButton: document.getElementById("setYesterdayButton"),
@@ -322,21 +324,21 @@
                 }
             };
 
-            const setDownloadButtonPath = (d) => {
-                const pathNode = elements.downloadButton?.querySelector('path');
+            const setButtonPath = (button, d) => {
+                const pathNode = button?.querySelector('path');
                 if (!pathNode || !d) return;
                 pathNode.setAttribute('d', d);
             };
 
-            const triggerDownloadButtonSuccess = () => {
-                if (!elements.downloadButton) return;
-                elements.downloadButton.classList.add('success');
-                setDownloadButtonPath("M5 13l4 4L19 7");
+            const triggerButtonSuccess = (button) => {
+                if (!button) return;
+                button.classList.add('success');
+                setButtonPath(button, "M5 13l4 4L19 7");
                 if (copySuccessTimer) clearTimeout(copySuccessTimer);
                 copySuccessTimer = setTimeout(() => {
                     copySuccessTimer = null;
-                    elements.downloadButton.classList.remove('success');
-                    setDownloadButtonPath("M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14");
+                    button.classList.remove('success');
+                    setButtonPath(button, "M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14");
                 }, 2000);
             };
 
@@ -969,7 +971,7 @@ Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.pre
                 const result = buildReportCopyText();
                 if (!result) return;
                 const copied = await copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
-                if (copied) triggerDownloadButtonSuccess();
+                if (copied) triggerButtonSuccess(elements.downloadButton);
                 closeDownloadMenu();
                 trackEvent('copy_gdoc_data', { trigger });
             };
@@ -978,9 +980,19 @@ Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.pre
                 const text = buildSheetCopyText();
                 if (!text) return;
                 const copied = await copyText(text, "Copied", "G-Sheet Data");
-                if (copied) triggerDownloadButtonSuccess();
+                if (copied) triggerButtonSuccess(elements.downloadButton);
                 closeDownloadMenu();
             };
+
+            if (elements.mobileReportCopyButton) {
+                elements.mobileReportCopyButton.addEventListener("click", async () => {
+                    const result = buildReportCopyText();
+                    if (!result) return;
+                    const copied = await copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
+                    if (copied) triggerButtonSuccess(elements.mobileReportCopyButton);
+                    trackEvent('copy_gdoc_data', { trigger: 'mobile' });
+                });
+            }
 
             elements.downloadButton.addEventListener("click", (event) => {
                 event.stopPropagation();
