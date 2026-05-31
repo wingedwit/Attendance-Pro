@@ -342,29 +342,6 @@
             align-items: center;
             gap: 0.6rem;
         }
-        .mobile-report-copy {
-            display: none;
-            width: 2.75rem;
-            min-width: 2.75rem;
-            height: 2.75rem;
-            border: 0;
-            border-radius: 999px;
-            padding: 0;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            background: linear-gradient(135deg, var(--secondary-light) 0%, #ff6b3b 100%);
-            box-shadow: 0 4px 12px rgba(255, 107, 59, 0.15);
-            transition: filter 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
-        }
-        .mobile-report-copy:hover {
-            filter: brightness(1.02);
-            box-shadow: 0 10px 20px rgba(255, 138, 61, 0.22);
-        }
-        .mobile-report-copy.success {
-            background: #10b981 !important;
-            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.28);
-        }
         .resident-link-icon {
             width: 2.75rem;
             min-width: 2.75rem;
@@ -832,12 +809,6 @@
             aside,
             main {
                 height: auto !important;
-            }
-            .app-shell > main {
-                display: none !important;
-            }
-            .mobile-report-copy {
-                display: inline-flex;
             }
         }
 

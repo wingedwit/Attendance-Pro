@@ -91,8 +91,6 @@
                 savedIndicator: document.getElementById("savedIndicator"),
                 clearRollsButton: document.getElementById("clearRollsButton"),
                 sortAndHighlightButton: document.getElementById("sortAndHighlightButton"),
-                mobileReportCopyButton: document.getElementById("mobileReportCopyButton"),
-                mobileReportCopyIcon: document.getElementById("mobileReportCopyIcon"),
                 upiCopyButton: document.getElementById("upiCopyButton"),
                 mobileCopyButton: document.getElementById("mobileCopyButton"),
                 setYesterdayButton: document.getElementById("setYesterdayButton"),
@@ -983,16 +981,6 @@ Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.pre
                 if (copied) triggerButtonSuccess(elements.downloadButton);
                 closeDownloadMenu();
             };
-
-            if (elements.mobileReportCopyButton) {
-                elements.mobileReportCopyButton.addEventListener("click", async () => {
-                    const result = buildReportCopyText();
-                    if (!result) return;
-                    const copied = await copyRichText(result.html, result.plain, "Copied", "G-Doc Data");
-                    if (copied) triggerButtonSuccess(elements.mobileReportCopyButton);
-                    trackEvent('copy_gdoc_data', { trigger: 'mobile' });
-                });
-            }
 
             elements.downloadButton.addEventListener("click", (event) => {
                 event.stopPropagation();
