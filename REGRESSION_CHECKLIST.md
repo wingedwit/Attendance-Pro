@@ -16,6 +16,15 @@ Run this checklist before/after safe optimization changes.
 - Typing roll numbers updates `Count` in real time.
 - Deleting roll numbers decreases `Count` immediately.
 - `Sort` works and keeps invalid tokens below sorted values.
+
+## Module Contract Checks
+
+- App loads without a `dependency missing` console error.
+- Toasts appear and dismiss after copy, sort, and validation actions.
+- G-Doc copy preserves plain-text and rich-text output.
+- G-Sheet copy preserves one row per configured roll number.
+- Copy success animation returns to its default icon.
+- App reloads successfully while offline after one online visit.
 - `Clear` empties input, clears validation state, and resets count.
 
 ## Persistence & Undo/Redo

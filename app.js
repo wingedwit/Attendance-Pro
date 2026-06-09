@@ -1,3 +1,17 @@
+        const requiredAttendanceModules = [
+            'AttendanceDateUtils',
+            'AttendanceStorageUtils',
+            'AttendanceLogic',
+            'AttendanceConfig',
+            'AttendanceUIUtils',
+            'AttendanceExportUtils'
+        ];
+        requiredAttendanceModules.forEach((moduleName) => {
+            if (!window[moduleName]) {
+                throw new Error(`Attendance Pro dependency missing: ${moduleName}. Check index.html script order.`);
+            }
+        });
+
         const {
             parseDDMMYYYY,
             formatTimeForReport,
@@ -7,14 +21,17 @@
         } = window.AttendanceDateUtils;
         const { safeStorage, loadStateFromStorage } = window.AttendanceStorageUtils;
         const { MAX_ROLL_RANGE_SIZE = 5000, createAttendanceEngine, groupNumbersIntoRanges } = window.AttendanceLogic;
+        const { STORAGE_KEY, STORAGE_VERSION, MAX_UNDO_HISTORY, createInitialState } = window.AttendanceConfig;
+        const { createToast, createClipboard, createCopyFeedback } = window.AttendanceUIUtils;
+        const {
+            buildReportCopyPayload,
+            buildSheetCopyText: formatSheetCopyText
+        } = window.AttendanceExportUtils;
 
-        const STORAGE_KEY = 'attendanceProData';
-        const STORAGE_VERSION = 2;
         let debounceTimer = null;
         const DEBOUNCE_DELAY = 300;
         const FAST_INPUT_DEBOUNCE_DELAY = 120;
         const SAVE_DEBOUNCE_DELAY = 180;
-        const MAX_UNDO_HISTORY = 200;
         const PILLS_INLINE_RENDER_LIMIT = 80;
         const FLATPICKR_SCRIPT_SRC = './assets/vendor/flatpickr/flatpickr.min.js';
         let cachedSectionNodes = null;
@@ -121,21 +138,14 @@
             let pendingRollCountInput = '';
             let flatpickrLoadPromise = null;
             let flatpickrInstance = null;
-            let toastTimer = null;
-            let copySuccessTimer = null;
             const trackEvent = (eventName, params = {}) => {
                 if (typeof window.gtag !== 'function') return;
                 window.gtag('event', eventName, params);
             };
 
-            const getInitialState = () => ({
-                date: window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date()),
-                startTime: '', endTime: '',
-                classType: "Theory", theoryType: "", batch: "",
-                minRoll: '', maxRoll: '',
-                facultyName: "", srName: "", lectureTopic: "", attendance: "",
-                attendanceInputMode: 'present'
-            });
+            const getInitialState = () => createInitialState(
+                window.flatpickr ? flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date())
+            );
 
             const escapeHtml = (value) => String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -260,85 +270,9 @@
                 return flatpickrLoadPromise;
             };
             
-            const showToast = (message, isError = false) => {
-                elements.toast.textContent = message;
-                elements.toast.classList.toggle("error", isError);
-                elements.toast.classList.add("show");
-                if (toastTimer) clearTimeout(toastTimer);
-                toastTimer = setTimeout(() => {
-                    toastTimer = null;
-                    elements.toast.classList.remove("show");
-                }, 3000);
-            };
-
-            const copyText = (text, successMessage, copiedLabel = "") => {
-                const toastMessage = copiedLabel ? `${successMessage} (${copiedLabel})` : successMessage;
-                if (!navigator.clipboard) {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    textArea.style.position = "fixed"; textArea.style.left = "-9999px";
-                    document.body.appendChild(textArea);
-                    textArea.focus(); textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        showToast(toastMessage);
-                        document.body.removeChild(textArea);
-                        return Promise.resolve(true);
-                    }
-                    catch (err) {
-                        showToast("Copy failed", true);
-                        document.body.removeChild(textArea);
-                        return Promise.resolve(false);
-                    }
-                } else {
-                    return navigator.clipboard.writeText(text)
-                        .then(() => {
-                            showToast(toastMessage);
-                            return true;
-                        })
-                        .catch(() => {
-                            showToast("Copy failed", true);
-                            return false;
-                        });
-                }
-            };
-
-            const copyRichText = (html, plain, successMessage, copiedLabel = "") => {
-                const toastMessage = copiedLabel ? `${successMessage} (${copiedLabel})` : successMessage;
-                if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-                    const htmlBlob = new Blob([html], { type: 'text/html' });
-                    const textBlob = new Blob([plain], { type: 'text/plain' });
-                    const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
-                    return navigator.clipboard.write([item])
-                        .then(() => {
-                            showToast(toastMessage);
-                            return true;
-                        })
-                        .catch(() => {
-                            return copyText(plain, successMessage, copiedLabel);
-                        });
-                } else {
-                    return copyText(plain, successMessage, copiedLabel);
-                }
-            };
-
-            const setButtonPath = (button, d) => {
-                const pathNode = button?.querySelector('path');
-                if (!pathNode || !d) return;
-                pathNode.setAttribute('d', d);
-            };
-
-            const triggerButtonSuccess = (button) => {
-                if (!button) return;
-                button.classList.add('success');
-                setButtonPath(button, "M5 13l4 4L19 7");
-                if (copySuccessTimer) clearTimeout(copySuccessTimer);
-                copySuccessTimer = setTimeout(() => {
-                    copySuccessTimer = null;
-                    button.classList.remove('success');
-                    setButtonPath(button, "M12 3v12m0 0l4-4m-4 4l-4-4M5 21h14");
-                }, 2000);
-            };
+            const showToast = createToast(elements.toast);
+            const { copyText, copyRichText } = createClipboard(showToast);
+            const triggerButtonSuccess = createCopyFeedback();
 
             if (elements.upiCopyButton) {
                 elements.upiCopyButton.addEventListener("click", () => copyText("vaibhav.ganesh51@okaxis", "Copied", "UPI ID"));
@@ -905,27 +839,7 @@
                     showToast("Fix errors first", true);
                     return null;
                 }
-
-                const { presentNumbers, absentNumbers } = report.stats;
-
-                const dateWithDay = report.dateWithDay.replace(
-                    /^(\d{2})-(\d{2})-(\d{4})/,
-                    '$1/$2/$3'
-                );
-
-                const presentList = report.presentRanges.join(', ') || 'None';
-                const absentList = report.absentRanges.join(', ') || 'None';
-
-                const plain = `Date: ${dateWithDay}, Time: ${report.timeLine}
-Faculty - ${state.facultyName || '-'}, Senior Resident - ${state.srName || '-'}
-Topic - ${state.lectureTopic || '-'}
-Type - ${report.typeLine || '-'}
-Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)
-- Present Students: ${presentList}
-- Absent Students: ${absentList}`;
-                const html = `<b>Date:</b> <b>${escapeHtml(dateWithDay)}</b>, Time: ${escapeHtml(report.timeLine)}<br>Faculty - ${escapeHtml(state.facultyName || '-')}, Senior Resident - ${escapeHtml(state.srName || '-')}<br>Topic - ${escapeHtml(state.lectureTopic || '-')}<br>Type - ${escapeHtml(report.typeLine || '-')}<br>Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.presentPct.toFixed(1)}%), Absent: ${absentNumbers.length} (${report.absentPct.toFixed(1)}%)<ul><li>Present Students: ${escapeHtml(presentList)}</li><li>Absent Students: ${escapeHtml(absentList)}</li></ul>`;
-
-                return { plain, html };
+                return buildReportCopyPayload({ state, report, escapeHtml });
             };
 
             const buildSheetCopyText = () => {
@@ -945,14 +859,8 @@ Total Students: ${report.total}, Present: ${presentNumbers.length} (${report.pre
                     return null;
                 }
 
-                const presentSet = new Set(report.stats.presentNumbers);
                 const durationVal = getStateDurationInHours() || 1;
-
-                const rows = [];
-                for(let i = min; i <= max; i++) {
-                    rows.push(presentSet.has(i) ? durationVal : 0);
-                }
-                return rows.join('\n');
+                return formatSheetCopyText({ report, durationValue: durationVal });
             };
 
             const closeDownloadMenu = () => {
