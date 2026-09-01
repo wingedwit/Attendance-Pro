@@ -956,6 +956,28 @@
                     return;
                 }
 
+                if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && (event.code === 'KeyZ' || key === 'z')) {
+                    const tag = (event.target && event.target.tagName) || '';
+                    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+                        event.preventDefault();
+                        elements.undoButton?.click();
+                        return;
+                    }
+                }
+
+                if (
+                    !event.altKey &&
+                    (((event.ctrlKey || event.metaKey) && (event.code === 'KeyY' || key === 'y')) ||
+                    ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.code === 'KeyZ' || key === 'z')))
+                ) {
+                    const tag = (event.target && event.target.tagName) || '';
+                    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+                        event.preventDefault();
+                        elements.redoButton?.click();
+                        return;
+                    }
+                }
+
                 if (!event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) return;
                 if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
 
