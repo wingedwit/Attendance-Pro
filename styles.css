@@ -90,17 +90,19 @@
             color: var(--on-surface-dark);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
-        .form-input-m3:focus {
+        .form-input-m3:focus,
+        .form-input-m3:focus-visible {
             outline: none;
             border-color: var(--primary-light);
             background-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.12);
+            box-shadow: 0 0 0 2px var(--bg-light), 0 0 0 4px var(--primary-light) !important;
             z-index: 10;
         }
-        .dark .form-input-m3:focus {
+        .dark .form-input-m3:focus,
+        .dark .form-input-m3:focus-visible {
             border-color: var(--primary-dark);
             background-color: rgba(45, 54, 70, 0.95);
-            box-shadow: 0 0 0 3px rgba(149, 180, 227, 0.11);
+            box-shadow: 0 0 0 2px var(--bg-dark), 0 0 0 4px var(--primary-dark) !important;
         }
         .dark .form-input-m3::placeholder {
             color: rgba(184, 199, 228, 0.72);
@@ -312,6 +314,7 @@
         #downloadButton svg {
             width: 1.15rem;
             height: 1.15rem;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
         }
         #downloadButton {
             background-color: var(--secondary-light) !important;
@@ -331,11 +334,50 @@
         #downloadButton.success {
             background: #10b981 !important;
             color: #ffffff !important;
-            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.28);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28), 0 10px 24px rgba(16, 185, 129, 0.32);
         }
         .dark #downloadButton.success {
             background: #10b981 !important;
             color: #ffffff !important;
+        }
+        #downloadButton.success svg {
+            animation: checkmarkPop 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes checkmarkPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Numerical count spring bounce */
+        @keyframes countBounce {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.22); }
+            100% { transform: scale(1); }
+        }
+
+        .count-pop {
+            display: inline-block;
+            animation: countBounce 240ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Active Date Pills */
+        #setYesterdayButton.active,
+        #setTodayButton.active,
+        #setTomorrowButton.active {
+            background-color: var(--primary-light) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(23, 105, 255, 0.28);
+            transform: translateY(-1px);
+        }
+        .dark #setYesterdayButton.active,
+        .dark #setTodayButton.active,
+        .dark #setTomorrowButton.active {
+            background-color: var(--primary-dark) !important;
+            color: var(--on-primary-dark) !important;
+            box-shadow: 0 2px 8px rgba(102, 163, 255, 0.22);
+            transform: translateY(-1px);
         }
         .report-actions {
             display: inline-flex;
@@ -865,9 +907,51 @@
         }
 
         .header-icon-button:focus-visible,
-        .action-btn:focus-visible {
-            outline: 2px solid rgba(29, 78, 216, 0.45);
-            outline-offset: 3px;
+        .action-btn:focus-visible,
+        .nav-section-btn:focus-visible,
+        .toggle-btn:focus-visible,
+        .shortcut-help-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--bg-light), 0 0 0 4px var(--primary-light) !important;
+        }
+
+        .dark .header-icon-button:focus-visible,
+        .dark .action-btn:focus-visible,
+        .dark .nav-section-btn:focus-visible,
+        .dark .toggle-btn:focus-visible,
+        .dark .shortcut-help-btn:focus-visible {
+            box-shadow: 0 0 0 2px var(--bg-dark), 0 0 0 4px var(--primary-dark) !important;
+        }
+
+        /* Micro-tactile press feedback */
+        .action-btn,
+        .nav-section-btn,
+        .header-icon-button,
+        .toggle-btn,
+        .shortcut-help-btn,
+        .download-option,
+        #downloadButton {
+            transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1),
+                        box-shadow 0.15s ease,
+                        background-color 0.15s ease,
+                        border-color 0.15s ease,
+                        color 0.15s ease;
+            will-change: transform;
+        }
+
+        .action-btn:active,
+        .header-icon-button:active,
+        .toggle-btn:active,
+        .shortcut-help-btn:active,
+        .download-option:active,
+        #downloadButton:active {
+            transform: scale(0.96) translateY(1px) !important;
+        }
+
+        /* Cautionary micro-tilt on reset button */
+        .header-icon-button.danger:hover svg {
+            transform: rotate(-10deg);
+            transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .form-label-bold {
@@ -911,5 +995,9 @@
                 animation-iteration-count: 1 !important;
                 scroll-behavior: auto !important;
                 transition-duration: 0.01ms !important;
+            }
+            .count-pop,
+            #downloadButton.success svg {
+                animation: none !important;
             }
         }

@@ -281,7 +281,13 @@ const startApp = () => {
 
     const updateRollCount = (attendanceText = '') => {
         const validation = getValidationResult(attendanceText);
-        elements.rollCount.textContent = String(validation.numbers.length);
+        const nextCount = String(validation.numbers.length);
+        if (elements.rollCount && elements.rollCount.textContent !== nextCount) {
+            elements.rollCount.textContent = nextCount;
+            elements.rollCount.classList.remove('count-pop');
+            void elements.rollCount.offsetWidth;
+            elements.rollCount.classList.add('count-pop');
+        }
     };
 
     const scheduleRollCountUpdate = (attendanceText = '') => {
