@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.6';
+const APP_VERSION = '1.0.7';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
@@ -14,6 +14,12 @@ const APP_SHELL = [
     './lib/app-config.js',
     './lib/ui-utils.js',
     './lib/export-utils.js',
+  './lib/step-navigator.js',
+  './lib/state-manager.js',
+  './lib/date-picker.js',
+  './lib/report-ui.js',
+  './lib/export-menu.js',
+  './lib/keyboard-shortcuts.js',
   './app.js',
   './pwa-register.js',
   './manifest.webmanifest',

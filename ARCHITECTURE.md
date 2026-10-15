@@ -13,7 +13,13 @@ small APIs attached to `window`, so it works without a bundler or development se
 4. `lib/app-config.js` -> `window.AttendanceConfig`
 5. `lib/ui-utils.js` -> `window.AttendanceUIUtils`
 6. `lib/export-utils.js` -> `window.AttendanceExportUtils`
-7. `app.js` -> DOM wiring and application orchestration
+7. `lib/step-navigator.js` -> `window.AttendanceStepNavigator`
+8. `lib/state-manager.js` -> `window.AttendanceStateManager`
+9. `lib/date-picker.js` -> `window.AttendanceDatePicker`
+10. `lib/report-ui.js` -> `window.AttendanceReportUI`
+11. `lib/export-menu.js` -> `window.AttendanceExportMenu`
+12. `lib/keyboard-shortcuts.js` -> `window.AttendanceShortcuts`
+13. `app.js` -> DOM wiring and application orchestration
 
 Do not reorder these scripts unless `app.js` dependencies are updated at the same time.
 
@@ -27,7 +33,13 @@ Do not reorder these scripts unless `app.js` dependencies are updated at the sam
 | `lib/app-config.js` | Storage contract, defaults, undo limit | DOM updates or persistence |
 | `lib/ui-utils.js` | Toasts, clipboard fallback, copy-success feedback | Report or attendance rules |
 | `lib/export-utils.js` | Pure G-Doc and G-Sheet output formatting | Validation UI or clipboard access |
-| `app.js` | State orchestration, event binding, rendering, feature coordination | Reusable low-level utilities |
+| `lib/step-navigator.js` | 3-step section switching, indicator aria-current, section focus | Business rules or roll state |
+| `lib/state-manager.js` | State container, debounce persistence, undo/redo stacks | Direct DOM manipulation |
+| `lib/date-picker.js` | Lazy Flatpickr loading, theme sync, date pill navigation | Live report generation |
+| `lib/report-ui.js` | Live report DOM rendering, differential caching, meters & pills | State persistence |
+| `lib/export-menu.js` | Dropdown export menu toggle, click-outside, copy triggers | Formatting algorithms |
+| `lib/keyboard-shortcuts.js` | Global hotkeys (Alt+Arrows, Ctrl+Alt+D/S, Ctrl+Backspace, Ctrl+Z/Y) | Direct DOM rendering |
+| `app.js` | State orchestration, event binding, feature coordination | Reusable low-level utilities |
 
 ## State Shape
 
@@ -57,13 +69,11 @@ storage version/migration behavior when required.
 - G-Doc or G-Sheet output formatting: `lib/export-utils.js`
 - Initial state, storage key/version, or undo limit: `lib/app-config.js`
 - Date or duration formatting: `lib/date-utils.js`
-- UI event behavior or live report rendering: `app.js`
+- Section wizard navigation: `lib/step-navigator.js`
+- State store and undo/redo stacks: `lib/state-manager.js`
+- Date picker and quick pills: `lib/date-picker.js`
+- Live report rendering and caching: `lib/report-ui.js`
+- Export dropdown menu: `lib/export-menu.js`
+- Keyboard shortcuts: `lib/keyboard-shortcuts.js`
+- UI event coordination: `app.js`
 - Visual styling: `styles.css`
-
-## Safe Extraction Process
-
-1. Extract one complete responsibility from `app.js`.
-2. Expose a small API from a new `lib/*.js` module.
-3. Load the module before `app.js`.
-4. Replace the old implementation in `app.js`.
-5. Run `REGRESSION_CHECKLIST.md` before extracting the next responsibility.
