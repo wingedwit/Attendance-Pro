@@ -34,7 +34,7 @@ const { buildReportCopyPayload, buildSheetCopyText: formatSheetCopyText } = wind
 
 const { createStepNavigator } = window.AttendanceStepNavigator;
 const { createStateStore } = window.AttendanceStateManager;
-const { createDatePickerController, formatDateDDMMYYYY } = window.AttendanceDatePicker;
+const { createDatePickerController } = window.AttendanceDatePicker;
 const { createReportRenderer } = window.AttendanceReportUI;
 const { createExportMenuController } = window.AttendanceExportMenu;
 const { initKeyboardShortcuts } = window.AttendanceShortcuts;
