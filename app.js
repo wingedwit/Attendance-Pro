@@ -261,6 +261,7 @@ const startApp = () => {
 
     const attendanceModeButtons = Array.from(elements.attendanceModeToggle.querySelectorAll('button'));
     const updateAttendanceModeUI = (mode) => {
+        elements.attendanceModeToggle.dataset.activeMode = mode;
         attendanceModeButtons.forEach((btn) => {
             const isActive = btn.dataset.mode === mode;
             btn.classList.toggle('active', isActive);
@@ -268,10 +269,19 @@ const startApp = () => {
         });
     };
 
-    const toggleClassTypeFields = () => {
+    const toggleClassTypeFields = (animate = false) => {
         const isTheory = elements.classType.value === "Theory";
-        elements.theoryTypeContainer.classList.toggle("hidden", !isTheory);
-        elements.batchContainer.classList.toggle("hidden", isTheory);
+        const activeContainer = isTheory ? elements.theoryTypeContainer : elements.batchContainer;
+        const inactiveContainer = isTheory ? elements.batchContainer : elements.theoryTypeContainer;
+
+        inactiveContainer.classList.remove("conditional-field-enter");
+        inactiveContainer.classList.add("hidden");
+
+        activeContainer.classList.remove("hidden", "conditional-field-enter");
+        if (animate) {
+            void activeContainer.offsetWidth;
+            activeContainer.classList.add("conditional-field-enter");
+        }
     };
 
     const updateUndoRedoButtons = ({ canUndo, canRedo }) => {
@@ -453,7 +463,7 @@ const startApp = () => {
     });
 
     elements.classType.addEventListener('change', (e) => {
-        toggleClassTypeFields();
+        toggleClassTypeFields(true);
         onInputChange('classType', e.target.value);
     });
 
