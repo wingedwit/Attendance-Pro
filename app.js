@@ -159,6 +159,93 @@ const startApp = () => {
     });
     datePicker.init();
 
+    const focusAndSelectControl = (control) => {
+        if (!control) return;
+        if (typeof control.scrollIntoView === 'function') {
+            control.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        control.focus();
+        if (typeof control.select === 'function' && (control.type === 'text' || control.type === 'number')) {
+            control.select();
+        }
+    };
+
+    const activateControlForReportTarget = (targetKey) => {
+        if (targetKey === 'date') {
+            stepNavigator.switchSection('section1');
+            requestAnimationFrame(() => {
+                datePicker.open();
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (targetKey === 'time') {
+            stepNavigator.switchSection('section1');
+            requestAnimationFrame(() => {
+                const targetEl = (elements.startTimeEl?.value && !elements.endTimeEl?.value)
+                    ? elements.endTimeEl
+                    : elements.startTimeEl;
+                focusAndSelectControl(targetEl);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (targetKey === 'roll-range') {
+            stepNavigator.switchSection('section1');
+            requestAnimationFrame(() => {
+                const targetEl = (elements.minRoll?.value && !elements.maxRoll?.value)
+                    ? elements.maxRoll
+                    : elements.minRoll;
+                focusAndSelectControl(targetEl);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (targetKey === 'faculty') {
+            stepNavigator.switchSection('section2');
+            requestAnimationFrame(() => {
+                focusAndSelectControl(elements.facultyName);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (targetKey === 'sr') {
+            stepNavigator.switchSection('section2');
+            requestAnimationFrame(() => {
+                focusAndSelectControl(elements.srName);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (targetKey === 'topic') {
+            stepNavigator.switchSection('section2');
+            requestAnimationFrame(() => {
+                focusAndSelectControl(elements.lectureTopic);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
+        if (
+            targetKey === 'attendance' ||
+            targetKey === 'present-stats' ||
+            targetKey === 'absent-stats' ||
+            targetKey === 'present-rolls' ||
+            targetKey === 'absent-rolls'
+        ) {
+            stepNavigator.switchSection('section3');
+            requestAnimationFrame(() => {
+                elements.attendanceInput?.focus();
+                syncActiveReportTarget();
+            });
+        }
+    };
+
     // Report Renderer
     const reportRenderer = createReportRenderer({
         outputPanel: elements.outputPanel,
@@ -167,7 +254,99 @@ const startApp = () => {
         attendanceInputEl: elements.attendanceInput,
         errorMessageEl: elements.errorMessage,
         escapeHtml,
-        maxRollRangeSize: MAX_ROLL_RANGE_SIZE
+        maxRollRangeSize: MAX_ROLL_RANGE_SIZE,
+        onTargetActivate: activateControlForReportTarget
+    });
+
+    const controlToReportTarget = new Map([
+        [elements.datePickerEl, 'date'],
+        [elements.setYesterdayButton, 'date'],
+        [elements.setTodayButton, 'date'],
+        [elements.setTomorrowButton, 'date'],
+        [elements.startTimeEl, 'time'],
+        [elements.endTimeEl, 'time'],
+        [elements.minRoll, 'roll-range'],
+        [elements.maxRoll, 'roll-range'],
+        [elements.facultyName, 'faculty'],
+        [elements.srName, 'sr'],
+        [elements.lectureTopic, 'topic'],
+        [elements.classType, 'class-type'],
+        [elements.theoryType, 'class-type'],
+        [elements.batch, 'class-type'],
+        [elements.attendanceInput, 'attendance']
+    ]);
+
+    const targetToFormControls = {
+        date: [elements.datePickerEl],
+        time: [elements.startTimeEl, elements.endTimeEl],
+        'roll-range': [elements.minRoll, elements.maxRoll],
+        faculty: [elements.facultyName],
+        sr: [elements.srName],
+        topic: [elements.lectureTopic],
+        'class-type': [elements.classType, elements.theoryType, elements.batch],
+        attendance: [elements.attendanceInput],
+        'present-stats': [elements.attendanceInput],
+        'absent-stats': [elements.attendanceInput],
+        'present-rolls': [elements.attendanceInput],
+        'absent-rolls': [elements.attendanceInput]
+    };
+
+    let hoveredReportTarget = '';
+
+    const syncLinkedFormControls = (activeTarget = '') => {
+        document.querySelectorAll('#inputContainer .is-linked-field').forEach((el) => {
+            el.classList.remove('is-linked-field');
+        });
+        if (!activeTarget || !targetToFormControls[activeTarget]) return;
+        targetToFormControls[activeTarget].forEach((control) => {
+            const wrapper = control?.parentElement;
+            if (wrapper && !wrapper.classList.contains('hidden')) {
+                wrapper.classList.add('is-linked-field');
+            }
+        });
+    };
+
+    const resolveActiveReportTarget = () => {
+        if (document.querySelector('.flatpickr-calendar.open')) return 'date';
+        const activeEl = document.activeElement;
+        if (activeEl) {
+            if (controlToReportTarget.has(activeEl)) return controlToReportTarget.get(activeEl) || '';
+            if (activeEl.closest('.flatpickr-calendar')) return 'date';
+            if (activeEl.closest('#attendanceModeToggle')) return 'attendance';
+            const focusedReportEl = activeEl.closest?.('[data-report-target]');
+            if (focusedReportEl) return focusedReportEl.dataset.reportTarget || '';
+        }
+        return hoveredReportTarget || '';
+    };
+
+    const syncActiveReportTarget = () => {
+        const activeTarget = resolveActiveReportTarget();
+        if (typeof reportRenderer.setActiveTarget === 'function') {
+            reportRenderer.setActiveTarget(activeTarget);
+        }
+        syncLinkedFormControls(activeTarget);
+    };
+
+    document.addEventListener('focusin', () => {
+        requestAnimationFrame(syncActiveReportTarget);
+    });
+
+    document.addEventListener('focusout', () => {
+        requestAnimationFrame(syncActiveReportTarget);
+    });
+
+    elements.outputPanel?.addEventListener('pointerover', (event) => {
+        const targetEl = event.target.closest('[data-report-target]');
+        const nextTarget = targetEl ? (targetEl.dataset.reportTarget || '') : '';
+        if (hoveredReportTarget === nextTarget) return;
+        hoveredReportTarget = nextTarget;
+        syncActiveReportTarget();
+    });
+
+    elements.outputPanel?.addEventListener('pointerleave', () => {
+        if (!hoveredReportTarget) return;
+        hoveredReportTarget = '';
+        syncActiveReportTarget();
     });
 
     const groupNumbersIntoRangesCached = (numbers) => {
