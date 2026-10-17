@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.17';
+const APP_VERSION = '1.0.18';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
@@ -10,10 +10,10 @@ const APP_SHELL = [
   './styles.css',
   './lib/date-utils.js',
   './lib/storage-utils.js',
-    './lib/attendance-logic.js',
-    './lib/app-config.js',
-    './lib/ui-utils.js',
-    './lib/export-utils.js',
+  './lib/attendance-logic.js',
+  './lib/app-config.js',
+  './lib/ui-utils.js',
+  './lib/export-utils.js',
   './lib/step-navigator.js',
   './lib/state-manager.js',
   './lib/date-picker.js',
@@ -54,7 +54,10 @@ const shouldCacheResponse = (response) =>
 
 const addShellAsset = async (cache, url) => {
   try {
-    await cache.add(url);
+    const response = await fetch(new Request(url, { cache: 'reload' }));
+    if (shouldCacheResponse(response)) {
+      await cache.put(url, response);
+    }
   } catch (_) {
     // A missing optional asset should not block the whole service worker update.
   }
@@ -88,9 +91,9 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-const fetchWithTimeout = (request, timeoutMs = 1800) => new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error('Navigation fetch timeout')), timeoutMs);
-  fetch(request).then(
+const fetchWithTimeout = (request, timeoutMs = 2500) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => reject(new Error('Fetch timeout')), timeoutMs);
+  fetch(new Request(request, { cache: 'no-cache' })).then(
     (response) => {
       clearTimeout(timer);
       resolve(response);
@@ -132,12 +135,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first with ETag/Last-Modified revalidation so latest GitHub Pages assets always load when online
   event.respondWith((async () => {
-    const cached = await caches.match(event.request);
-    if (cached) return cached;
-
     try {
-      const fresh = await fetch(event.request);
+      const fresh = await fetchWithTimeout(event.request);
       if (shouldCacheResponse(fresh)) {
         const runtime = await caches.open(RUNTIME_CACHE);
         await runtime.put(event.request, fresh.clone());
@@ -145,6 +146,9 @@ self.addEventListener('fetch', (event) => {
       }
       return fresh;
     } catch (_) {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+
       if (event.request.destination === 'document') {
         const cachedShell = await caches.match('./index.html');
         if (cachedShell) return cachedShell;

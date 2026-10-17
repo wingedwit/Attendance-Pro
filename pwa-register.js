@@ -14,18 +14,25 @@
   window.addEventListener('load', () => {
     const register = async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./service-worker.js');
+        const registration = await navigator.serviceWorker.register('./service-worker.js', {
+          updateViaCache: 'none'
+        });
         await registration.update();
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update().catch(() => {});
+          }
+        });
       } catch (_) {
         // Registration failures should not block app usage.
       }
     };
 
-    // Register in idle time so first paint and first interactions stay fast.
     if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(register, { timeout: 2000 });
+      window.requestIdleCallback(register, { timeout: 1500 });
     } else {
-      setTimeout(register, 1200);
+      setTimeout(register, 800);
     }
   });
 })();
