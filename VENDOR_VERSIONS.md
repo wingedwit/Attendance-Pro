@@ -3,7 +3,7 @@
 Pinned local vendor assets used by Attendance Pro:
 
 - Tailwind CSS CLI: `v4.2.1`
-- Flatpickr: `v4.6.13` (from jsDelivr npm package path)
+- Date Picker: Native zero-dependency Google Calendar-inspired popover (`lib/date-picker.js`)
 
 ## Rebuild Notes
 

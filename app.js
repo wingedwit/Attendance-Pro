@@ -100,9 +100,7 @@ const startApp = () => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
-    const getInitialState = () => createInitialState(
-        window.flatpickr ? window.flatpickr.formatDate(new Date(), "d-m-Y") : formatDateDDMMYYYY(new Date())
-    );
+    const getInitialState = () => createInitialState(formatDateDDMMYYYY(new Date()));
 
     // Initialize Store
     const store = createStateStore({
@@ -325,11 +323,11 @@ const startApp = () => {
     };
 
     const resolveActiveReportTarget = () => {
-        if (document.querySelector('.flatpickr-calendar.open')) return 'date';
+        if (typeof datePicker.isOpen === 'function' && datePicker.isOpen()) return 'date';
         const activeEl = document.activeElement;
         if (activeEl) {
             if (controlToReportTarget.has(activeEl)) return controlToReportTarget.get(activeEl) || '';
-            if (activeEl.closest('.flatpickr-calendar')) return 'date';
+            if (activeEl.closest('.gcal-popover')) return 'date';
             if (activeEl.closest('#attendanceModeToggle')) return 'attendance';
             const focusedReportEl = activeEl.closest?.('[data-report-target]');
             if (focusedReportEl) return focusedReportEl.dataset.reportTarget || '';
@@ -769,6 +767,9 @@ const startApp = () => {
     // Keyboard Shortcuts
     initKeyboardShortcuts({
         onEscape: () => {
+            if (typeof datePicker.handleEscape === 'function' && datePicker.handleEscape()) {
+                return true;
+            }
             if (exportMenu.isOpen()) {
                 exportMenu.close();
                 elements.downloadButton.focus();
@@ -778,11 +779,20 @@ const startApp = () => {
         },
         onCopyReport: () => copyReportData('shortcut'),
         onCopySheet: () => copySheetData(),
-        onReset: resetForm,
+        onReset: () => {
+            datePicker.close?.();
+            resetForm();
+        },
         onUndo: () => elements.undoButton?.click(),
         onRedo: () => elements.redoButton?.click(),
-        onStepNext: () => stepNavigator.navigateOffset(1),
-        onStepPrev: () => stepNavigator.navigateOffset(-1)
+        onStepNext: () => {
+            datePicker.close?.();
+            stepNavigator.navigateOffset(1);
+        },
+        onStepPrev: () => {
+            datePicker.close?.();
+            stepNavigator.navigateOffset(-1);
+        }
     });
 
     // Initial state sync & section 1 open

@@ -35,7 +35,7 @@ Do not reorder these scripts unless `app.js` dependencies are updated at the sam
 | `lib/export-utils.js` | Pure G-Doc and G-Sheet output formatting | Validation UI or clipboard access |
 | `lib/step-navigator.js` | 3-step section switching, indicator aria-current, section focus | Business rules or roll state |
 | `lib/state-manager.js` | State container, debounce persistence, undo/redo stacks | Direct DOM manipulation |
-| `lib/date-picker.js` | Lazy Flatpickr loading, theme sync, date pill navigation | Live report generation |
+| `lib/date-picker.js` | Google Calendar-inspired mini-calendar popover, month/year switcher, date pill navigation | Live report generation |
 | `lib/report-ui.js` | Live report DOM rendering, differential caching, meters & pills | State persistence |
 | `lib/export-menu.js` | Dropdown export menu toggle, click-outside, copy triggers | Formatting algorithms |
 | `lib/keyboard-shortcuts.js` | Global hotkeys (Alt+Arrows, Ctrl+Alt+D/S, Ctrl+Backspace, Ctrl+Z/Y) | Direct DOM rendering |

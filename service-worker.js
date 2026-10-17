@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.12';
+const APP_VERSION = '1.0.15';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
@@ -24,9 +24,6 @@ const APP_SHELL = [
   './pwa-register.js',
   './manifest.webmanifest',
   './assets/css/tailwind.min.css',
-  './assets/vendor/flatpickr/flatpickr.min.js',
-  './assets/vendor/flatpickr/themes/dark.css',
-  './assets/vendor/flatpickr/themes/light.css',
   './assets/icons/icon.svg',
   './assets/icons/icon-maskable.svg'
 ];

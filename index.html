@@ -12,7 +12,6 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./assets/icons/icon.svg">
 
-    <link id="flatpickr-theme" rel="stylesheet">
     <link rel="stylesheet" href="./assets/css/tailwind.min.css">
     <link rel="stylesheet" href="./styles.css">
     <script>
@@ -27,18 +26,6 @@
             const root = document.documentElement;
             root.classList.toggle('dark', Boolean(isDark));
             root.style.colorScheme = isDark ? 'dark' : 'light';
-
-            const flatpickrThemeLink = document.getElementById('flatpickr-theme');
-            if (flatpickrThemeLink) {
-                const themeHref = isDark
-                    ? './assets/vendor/flatpickr/themes/dark.css'
-                    : './assets/vendor/flatpickr/themes/light.css';
-                if (flatpickrThemeLink.dataset.enabled === 'true') {
-                    flatpickrThemeLink.href = themeHref;
-                } else {
-                    flatpickrThemeLink.dataset.pendingHref = themeHref;
-                }
-            }
         }
 
         applySystemTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -95,7 +82,7 @@
                                 <button type="button" id="setTomorrowButton" class="action-btn secondary px-4 py-1.5 rounded-full text-xs font-semibold">Tomorrow</button>
                             </div>
                         </div>
-                        <input id="datePicker" class="form-input-m3 w-full p-4 cursor-pointer" placeholder="Select date" aria-label="Class date">
+                        <input id="datePicker" type="text" readonly class="form-input-m3 w-full p-4 cursor-pointer" placeholder="Select date" aria-label="Class date">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
