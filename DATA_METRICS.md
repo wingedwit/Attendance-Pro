@@ -1,22 +1,22 @@
 # Attendance-Pro and Resident-Pro Data Metrics Report
 
-Last Updated: 2026-10-17 19:57
+Last Updated: 2026-10-17 19:59
 
 ## Executive Summary
 
 | Metric | Attendance-Pro | Resident-Pro | Combined Total |
 | :--- | ---: | ---: | ---: |
-| **Total Size (Uncompressed)** | **248.18 KB** | **196.22 KB** | **444.40 KB** |
-| **Total Lines** | **6,135** | **5,917** | **12,052** |
-| **Non-Empty Code Lines** | **5,548** | **5,195** | **10,743** |
-| **JavaScript Lines** | **3,786** | **2,985** | **6,771** |
+| **Total Size (Uncompressed)** | **252.12 KB** | **200.25 KB** | **452.37 KB** |
+| **Total Lines** | **6,219** | **6,004** | **12,223** |
+| **Non-Empty Code Lines** | **5,623** | **5,273** | **10,896** |
+| **JavaScript Lines** | **3,786** | **2,988** | **6,774** |
 | **CSS Lines** | **1,823** | **2,511** | **4,334** |
 | **HTML Lines** | **282** | **259** | **541** |
-| **PWA / Docs / Icons Lines** | **244** | **162** | **406** |
-| **Tracked Files** | **27** | **24** | **51** |
+| **PWA / Docs / Icons Lines** | **328** | **246** | **574** |
+| **Tracked Files** | **28** | **25** | **53** |
 | **Service Worker Version** | v1.0.18 | v1.0.26 | — |
 | **PWA Strategy** | Network-First | Network-First | — |
-| **Git Commits (main)** | **102** | **53** | **10253** |
+| **Git Commits (main)** | **103** | **54** | **10354** |
 
 ---
 
@@ -28,6 +28,7 @@ Last Updated: 2026-10-17 19:57
 | app.js | JavaScript | 33.18 KB | 859 | 763 |
 | APP_STATS.md | Documentation | 1.84 KB | 61 | 52 |
 | ARCHITECTURE.md | Documentation | 4.14 KB | 79 | 64 |
+| DATA_METRICS.md | Documentation | 3.94 KB | 84 | 75 |
 | index.html | HTML Shell | 18.52 KB | 282 | 258 |
 | manifest.webmanifest | PWA Manifest | 0.60 KB | 26 | 26 |
 | pwa-register.js | JavaScript | 1.17 KB | 38 | 33 |
@@ -61,6 +62,7 @@ Last Updated: 2026-10-17 19:57
 | .gitignore | Binary / Config | 0.07 KB | - | - |
 | app.js | JavaScript | 22.68 KB | 630 | 555 |
 | ARCHITECTURE.md | Documentation | 3.96 KB | 75 | 61 |
+| DATA_METRICS.md | Documentation | 3.94 KB | 84 | 75 |
 | index.html | HTML Shell | 17.60 KB | 259 | 244 |
 | manifest.webmanifest | PWA Manifest | 0.59 KB | 26 | 26 |
 | pwa-register.js | JavaScript | 1.13 KB | 38 | 33 |
@@ -77,7 +79,7 @@ Last Updated: 2026-10-17 19:57
 | lib/modal-manager.js | JavaScript | 2.46 KB | 62 | 55 |
 | lib/picker-modal.js | JavaScript | 8.70 KB | 212 | 190 |
 | lib/report-ui.js | JavaScript | 9.63 KB | 208 | 183 |
-| lib/resident-logic.js | JavaScript | 6.77 KB | 185 | 163 |
+| lib/resident-logic.js | JavaScript | 6.87 KB | 188 | 166 |
 | lib/resident-modal.js | JavaScript | 12.28 KB | 313 | 275 |
 | lib/state-manager.js | JavaScript | 5.79 KB | 173 | 150 |
 | lib/storage-utils.js | JavaScript | 2.47 KB | 74 | 65 |
