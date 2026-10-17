@@ -1,4 +1,4 @@
-# Attendance-Pro and Resident-Pro Data Metrics Report
+# Pro Apps Report
 
 Last Updated: 2026-10-17 19:59
 
@@ -14,8 +14,8 @@ Last Updated: 2026-10-17 19:59
 | **HTML Lines** | **282** | **259** | **541** |
 | **PWA / Docs / Icons Lines** | **328** | **246** | **574** |
 | **Tracked Files** | **28** | **25** | **53** |
-| **Service Worker Version** | v1.0.18 | v1.0.26 | — |
-| **PWA Strategy** | Network-First | Network-First | — |
+| **Service Worker Version** | v1.0.18 | v1.0.26 | ï¿½ |
+| **PWA Strategy** | Network-First | Network-First | ï¿½ |
 | **Git Commits (main)** | **103** | **54** | **10354** |
 
 ---
