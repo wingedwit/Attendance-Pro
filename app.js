@@ -231,6 +231,20 @@ const startApp = () => {
             return;
         }
 
+        if (targetKey === 'class-type') {
+            stepNavigator.switchSection('section2');
+            requestAnimationFrame(() => {
+                const isTheory = elements.classType?.value === 'Theory';
+                const dependentControl = isTheory ? elements.theoryType : elements.batch;
+                const targetEl = (dependentControl && !dependentControl.closest('.hidden') && elements.classType?.value)
+                    ? dependentControl
+                    : elements.classType;
+                focusAndSelectControl(targetEl);
+                syncActiveReportTarget();
+            });
+            return;
+        }
+
         if (
             targetKey === 'attendance' ||
             targetKey === 'present-stats' ||
@@ -292,18 +306,22 @@ const startApp = () => {
     };
 
     let hoveredReportTarget = '';
+    let activeLinkedWrappers = [];
 
     const syncLinkedFormControls = (activeTarget = '') => {
-        document.querySelectorAll('#inputContainer .is-linked-field').forEach((el) => {
-            el.classList.remove('is-linked-field');
-        });
+        for (let i = 0; i < activeLinkedWrappers.length; i++) {
+            activeLinkedWrappers[i].classList.remove('is-linked-field');
+        }
+        activeLinkedWrappers = [];
         if (!activeTarget || !targetToFormControls[activeTarget]) return;
-        targetToFormControls[activeTarget].forEach((control) => {
-            const wrapper = control?.parentElement;
+        const controls = targetToFormControls[activeTarget];
+        for (let i = 0; i < controls.length; i++) {
+            const wrapper = controls[i]?.parentElement;
             if (wrapper && !wrapper.classList.contains('hidden')) {
                 wrapper.classList.add('is-linked-field');
+                activeLinkedWrappers.push(wrapper);
             }
-        });
+        }
     };
 
     const resolveActiveReportTarget = () => {
@@ -530,7 +548,6 @@ const startApp = () => {
         elements.attendanceInput.value = state.attendance || '';
         toggleClassTypeFields();
         updateAttendanceModeUI(state.attendanceInputMode || 'present');
-        updateRollCount(elements.attendanceInput.value);
     };
 
     // Store subscription
