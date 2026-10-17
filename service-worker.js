@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.15';
+const APP_VERSION = '1.0.17';
 const CACHE_VERSION = `attendance-pro-v${APP_VERSION}`;
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;

@@ -34,7 +34,7 @@ const { buildReportCopyPayload, buildSheetCopyText: formatSheetCopyText } = wind
 
 const { createStepNavigator } = window.AttendanceStepNavigator;
 const { createStateStore } = window.AttendanceStateManager;
-const { createDatePickerController } = window.AttendanceDatePicker;
+const { createDatePickerController, createTimePickerController } = window.AttendanceDatePicker;
 const { createReportRenderer } = window.AttendanceReportUI;
 const { createExportMenuController } = window.AttendanceExportMenu;
 const { initKeyboardShortcuts } = window.AttendanceShortcuts;
@@ -134,6 +134,8 @@ const startApp = () => {
         elements.mobileCopyButton.addEventListener("click", () => copyText("+919468937372", "Copied", "Mobile Number"));
     }
 
+    let timePicker = null;
+
     // Date Picker Controller
     const datePicker = createDatePickerController({
         datePickerEl: elements.datePickerEl,
@@ -153,9 +155,34 @@ const startApp = () => {
             }
             store.setState({ date: trimmed });
         },
-        getCurrentDate: () => store.getState().date
+        getCurrentDate: () => store.getState().date,
+        onOpen: () => timePicker?.close?.()
     });
     datePicker.init();
+
+    // Time Picker Controller
+    timePicker = createTimePickerController({
+        startTimeEl: elements.startTimeEl,
+        endTimeEl: elements.endTimeEl,
+        dateUtils: window.AttendanceDateUtils,
+        onTimeChange: (field, value) => {
+            const currentState = store.getState();
+            if (currentState[field] === value) {
+                renderOutput();
+                return;
+            }
+            store.setState({ [field]: value });
+        },
+        getCurrentTimes: () => {
+            const currentState = store.getState();
+            return {
+                startTime: currentState.startTime,
+                endTime: currentState.endTime
+            };
+        },
+        onOpen: () => datePicker.close?.()
+    });
+    timePicker.init();
 
     const focusAndSelectControl = (control) => {
         if (!control) return;
@@ -181,10 +208,11 @@ const startApp = () => {
         if (targetKey === 'time') {
             stepNavigator.switchSection('section1');
             requestAnimationFrame(() => {
-                const targetEl = (elements.startTimeEl?.value && !elements.endTimeEl?.value)
-                    ? elements.endTimeEl
-                    : elements.startTimeEl;
-                focusAndSelectControl(targetEl);
+                const currentState = store.getState();
+                const targetField = (currentState.startTime && !currentState.endTime)
+                    ? 'endTime'
+                    : 'startTime';
+                timePicker.open(targetField);
                 syncActiveReportTarget();
             });
             return;
@@ -324,10 +352,12 @@ const startApp = () => {
 
     const resolveActiveReportTarget = () => {
         if (typeof datePicker.isOpen === 'function' && datePicker.isOpen()) return 'date';
+        if (typeof timePicker.isOpen === 'function' && timePicker.isOpen()) return 'time';
         const activeEl = document.activeElement;
         if (activeEl) {
             if (controlToReportTarget.has(activeEl)) return controlToReportTarget.get(activeEl) || '';
             if (activeEl.closest('.gcal-popover')) return 'date';
+            if (activeEl.closest('.gtime-popover')) return 'time';
             if (activeEl.closest('#attendanceModeToggle')) return 'attendance';
             const focusedReportEl = activeEl.closest?.('[data-report-target]');
             if (focusedReportEl) return focusedReportEl.dataset.reportTarget || '';
@@ -536,6 +566,10 @@ const startApp = () => {
     // UI inputs sync
     const syncDOMInputs = (state) => {
         if (state.date) datePicker.setDate(state.date, false);
+        timePicker.setTimes({
+            startTime: state.startTime,
+            endTime: state.endTime
+        });
 
         for (const key in state) {
             if (elements[key] && typeof elements[key].value !== 'undefined' && elements[key] !== elements.attendanceInput) {
@@ -669,9 +703,6 @@ const startApp = () => {
         }
     });
 
-    elements.startTimeEl.addEventListener("change", (e) => onInputChange("startTime", e.target.value));
-    elements.endTimeEl.addEventListener("change", (e) => onInputChange("endTime", e.target.value));
-
     // Undo / Redo
     elements.undoButton.addEventListener("click", () => store.undo());
     elements.redoButton.addEventListener("click", () => store.redo());
@@ -684,8 +715,10 @@ const startApp = () => {
 
         const clearedState = store.getState();
         datePicker.setDate(clearedState.date, true);
-        elements.startTimeEl.value = '';
-        elements.endTimeEl.value = '';
+        timePicker.setTimes({
+            startTime: clearedState.startTime,
+            endTime: clearedState.endTime
+        });
 
         ['facultyName', 'srName', 'lectureTopic', 'theoryType', 'batch', 'minRoll', 'maxRoll', 'attendanceInput']
             .forEach((key) => { elements[key].value = ''; });
@@ -770,6 +803,9 @@ const startApp = () => {
             if (typeof datePicker.handleEscape === 'function' && datePicker.handleEscape()) {
                 return true;
             }
+            if (typeof timePicker.handleEscape === 'function' && timePicker.handleEscape()) {
+                return true;
+            }
             if (exportMenu.isOpen()) {
                 exportMenu.close();
                 elements.downloadButton.focus();
@@ -781,16 +817,19 @@ const startApp = () => {
         onCopySheet: () => copySheetData(),
         onReset: () => {
             datePicker.close?.();
+            timePicker.close?.();
             resetForm();
         },
         onUndo: () => elements.undoButton?.click(),
         onRedo: () => elements.redoButton?.click(),
         onStepNext: () => {
             datePicker.close?.();
+            timePicker.close?.();
             stepNavigator.navigateOffset(1);
         },
         onStepPrev: () => {
             datePicker.close?.();
+            timePicker.close?.();
             stepNavigator.navigateOffset(-1);
         }
     });
